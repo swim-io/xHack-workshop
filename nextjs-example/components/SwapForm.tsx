@@ -6,6 +6,7 @@ import {
   CardActions,
   CardContent,
   Checkbox,
+  CircularProgress,
   Divider,
   FormControl,
   FormControlLabel,
@@ -16,12 +17,15 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { BigNumber } from "ethers";
 import { useFormik } from "formik";
 import type { FC } from "react";
 import { useContext } from "react";
 
 import { CHAINS } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
+import { useEvmGasBalance, useEvmWallet } from "../hooks";
 import type { ChainName, StableCoinTokenProject } from "../types";
 
 type SwapFormProps = {
@@ -50,6 +54,19 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
       );
     },
   });
+
+  const evmWallet = useEvmWallet();
+
+  const sourceGasBalance = useEvmGasBalance(
+    formik.values.sourceChain,
+    getEvmProvider(CHAINS[formik.values.sourceChain]),
+    evmWallet.address,
+  );
+  const targetGasBalance = useEvmGasBalance(
+    formik.values.targetChain,
+    getEvmProvider(CHAINS[formik.values.targetChain]),
+    evmWallet.address,
+  );
 
   return (
     <Card sx={{ bgcolor: "background.paper" }}>
@@ -108,6 +125,9 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
               />
             </FormControl>
           </Row>
+          <Row>
+            <GasBalanceComponent query={sourceGasBalance} />
+          </Row>
 
           <Divider />
 
@@ -147,6 +167,9 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                 ))}
               </Select>
             </FormControl>
+          </Row>
+          <Row>
+            <GasBalanceComponent query={targetGasBalance} />
           </Row>
 
           <Divider />
@@ -194,3 +217,22 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
 const Row = styled(Box)`
   margin: 20px 0;
 `;
+
+const GasBalanceComponent = ({
+  query,
+}: {
+  readonly query: UseQueryResult<BigNumber | null, Error>;
+}) => {
+  return (
+    <Typography paragraph>
+      Gas balance:{" "}
+      {query.isLoading ? (
+        <CircularProgress size={15} sx={{ ml: 1 }} />
+      ) : query.isSuccess && query.data ? (
+        query.data.toString()
+      ) : (
+        "—"
+      )}
+    </Typography>
+  );
+};
