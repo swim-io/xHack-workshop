@@ -25,7 +25,7 @@ import { useContext } from "react";
 
 import { CHAINS } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import { useEvmGasBalance, useEvmWallet } from "../hooks";
+import { useEvmGasBalance, useEvmTokenBalance, useEvmWallet } from "../hooks";
 import type { ChainName, StableCoinTokenProject } from "../types";
 
 type SwapFormProps = {
@@ -66,6 +66,16 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
     formik.values.targetChain,
     getEvmProvider(CHAINS[formik.values.targetChain]),
     evmWallet.address,
+  );
+
+  const sourceTokenBalance = useEvmTokenBalance(
+    formik.values.sourceChain,
+    formik.values.sourceTokenNumber,
+  );
+
+  const targetTokenBalance = useEvmTokenBalance(
+    formik.values.targetChain,
+    formik.values.targetTokenNumber,
   );
 
   return (
@@ -126,7 +136,11 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
             </FormControl>
           </Row>
           <Row>
-            <GasBalanceComponent query={sourceGasBalance} />
+            <BalanceComponent label="Gas balance" query={sourceGasBalance} />
+            <BalanceComponent
+              label="Token balance"
+              query={sourceTokenBalance}
+            />
           </Row>
 
           <Divider />
@@ -169,7 +183,11 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
             </FormControl>
           </Row>
           <Row>
-            <GasBalanceComponent query={targetGasBalance} />
+            <BalanceComponent label="Gas balance" query={targetGasBalance} />
+            <BalanceComponent
+              label="Token balance"
+              query={targetTokenBalance}
+            />
           </Row>
 
           <Divider />
@@ -218,14 +236,16 @@ const Row = styled(Box)`
   margin: 20px 0;
 `;
 
-const GasBalanceComponent = ({
+const BalanceComponent = ({
+  label,
   query,
 }: {
+  readonly label: string;
   readonly query: UseQueryResult<BigNumber | null, Error>;
 }) => {
   return (
     <Typography paragraph>
-      Gas balance:{" "}
+      {label}:{" "}
       {query.isLoading ? (
         <CircularProgress size={15} sx={{ ml: 1 }} />
       ) : query.isSuccess && query.data ? (

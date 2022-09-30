@@ -9,7 +9,7 @@ export const useEvmGasBalance = (
   provider: providers.JsonRpcProvider,
   address: string | null,
 ): UseQueryResult<BigNumber | null, Error> => {
-  return useQuery([chainName, address], () => {
+  return useQuery(["evmGasBalance", chainName, address], () => {
     if (!address) return null;
     return provider.getBalance(address);
   });
