@@ -21,11 +21,9 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { BigNumber } from "ethers";
 import { useFormik } from "formik";
 import type { FC } from "react";
-import { useContext } from "react";
 
 import { CHAINS } from "../config";
-import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import { useEvmGasBalance, useEvmTokenBalance, useEvmWallet } from "../hooks";
+import { useEvmGasBalance, useEvmTokenBalance } from "../hooks";
 import type { ChainName, StableCoinTokenProject } from "../types";
 
 type SwapFormProps = {
@@ -34,8 +32,6 @@ type SwapFormProps = {
 };
 
 export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
-  const getEvmProvider = useContext(GetEvmProviderContext);
-
   const formik = useFormik({
     initialValues: {
       sourceChain: chains[0],
@@ -48,33 +44,19 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
     },
     onSubmit: (values) => {
       console.info("submitting values", values);
-      console.info(
-        "sourceChainProvider",
-        getEvmProvider(CHAINS[values.sourceChain]),
-      );
     },
   });
 
-  const evmWallet = useEvmWallet();
-
-  const sourceGasBalance = useEvmGasBalance(
-    formik.values.sourceChain,
-    getEvmProvider(CHAINS[formik.values.sourceChain]),
-    evmWallet.address,
-  );
-  const targetGasBalance = useEvmGasBalance(
-    formik.values.targetChain,
-    getEvmProvider(CHAINS[formik.values.targetChain]),
-    evmWallet.address,
-  );
+  const sourceGasBalance = useEvmGasBalance(CHAINS[formik.values.sourceChain]);
+  const targetGasBalance = useEvmGasBalance(CHAINS[formik.values.targetChain]);
 
   const sourceTokenBalance = useEvmTokenBalance(
-    formik.values.sourceChain,
+    CHAINS[formik.values.sourceChain],
     formik.values.sourceTokenNumber,
   );
 
   const targetTokenBalance = useEvmTokenBalance(
-    formik.values.targetChain,
+    CHAINS[formik.values.targetChain],
     formik.values.targetTokenNumber,
   );
 
