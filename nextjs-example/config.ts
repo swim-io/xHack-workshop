@@ -37,4 +37,4 @@ export const TOKEN_ADDRESSES: Record<Chain, Record<number, string>> = {
 };
 
 export const TOKEN_PROJECTS_STABLE_COINS: readonly StableCoinTokenProject[] =
-  sortBy(TOKEN_PROJECTS.filter(isStablecoin), "displayName");
+  sortBy(TOKEN_PROJECTS.filter(isStablecoin), "symbol");

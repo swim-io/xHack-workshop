@@ -1,8 +1,9 @@
-import { Grid, Link, Typography } from "@mui/material";
+import { Box, Grid, Link, Typography } from "@mui/material";
 import type { NextPage } from "next";
 import Head from "next/head";
 
 import { SwapForm } from "../components/SwapForm";
+import { Wallets } from "../components/Wallets";
 import { SUPPORTED_CHAINS, TOKEN_PROJECTS_STABLE_COINS } from "../config";
 
 const Home: NextPage = () => {
@@ -36,14 +37,19 @@ const Home: NextPage = () => {
         direction="column"
         sx={{ marginTop: "5vh" }}
       >
-        <Typography paragraph color="background.paper" sx={{ m: 3 }}>
-          Swap form powered by{" "}
-          <Link href="https://swim.io" target="swim" color="background.paper">
-            swim.io
-          </Link>{" "}
-          SDK
-        </Typography>
-        <SwapForm chains={chains} tokenProjects={tokenProjects} />
+        <Box sx={{ width: "100%", maxWidth: 500 }}>
+          <Typography paragraph color="background.paper" sx={{ m: 3 }}>
+            Swap form powered by{" "}
+            <Link href="https://swim.io" target="swim" color="background.paper">
+              swim.io
+            </Link>{" "}
+            SDK
+          </Typography>
+          <Box marginBottom="2vh">
+            <Wallets />
+          </Box>
+          <SwapForm chains={chains} tokenProjects={tokenProjects} />
+        </Box>
       </Grid>
     </>
   );

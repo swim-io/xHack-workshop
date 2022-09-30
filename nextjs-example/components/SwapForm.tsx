@@ -24,10 +24,6 @@ import { CHAINS } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
 import type { ChainName, StableCoinTokenProject } from "../types";
 
-const Row = styled(Box)`
-  margin: 20px 0;
-`;
-
 type SwapFormProps = {
   readonly chains: readonly ChainName[];
   readonly tokenProjects: readonly StableCoinTokenProject[];
@@ -56,7 +52,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
   });
 
   return (
-    <Card sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
+    <Card sx={{ bgcolor: "background.paper" }}>
       <CardContent>
         <Box
           component="form"
@@ -96,7 +92,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                     key={tokenProject.id}
                     value={tokenProject.tokenNumber}
                   >
-                    {tokenProject.displayName}
+                    {tokenProject.symbol}
                   </MenuItem>
                 ))}
               </Select>
@@ -146,7 +142,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                     key={tokenProject.id}
                     value={tokenProject.tokenNumber}
                   >
-                    {tokenProject.displayName}
+                    {tokenProject.symbol}
                   </MenuItem>
                 ))}
               </Select>
@@ -194,3 +190,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
     </Card>
   );
 };
+
+const Row = styled(Box)`
+  margin: 20px 0;
+`;
