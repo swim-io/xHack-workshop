@@ -17,6 +17,7 @@
     "@swim-io/core": "^0.32.1",
     "@swim-io/evm": "^0.32.1",
     "@swim-io/token-projects": "^0.32.1",
+    "ethers": "^5.7.1",
     "formik": "^2.2.9",
     "lodash": "^4.17.21",
     "next": "12.3.1",

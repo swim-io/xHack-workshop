@@ -8,6 +8,7 @@ import { sortBy } from "lodash";
 import type { Chain, ChainName, StableCoinTokenProject } from "./types";
 import { isStablecoin } from "./types";
 
+export { CHAINS };
 export const SUPPORTED_CHAINS: readonly ChainName[] = ["bsc", "ethereum"];
 
 // TODO: Get from @swim-io/token-projects
@@ -17,11 +18,6 @@ enum TokenNumber {
   Usdt,
   Busd,
 }
-
-export const RPC_URLS: Record<Chain, string | undefined> = {
-  [CHAINS.bsc]: process.env.NEXT_PUBLIC_BNB_RPC,
-  [CHAINS.ethereum]: process.env.NEXT_PUBLIC_ETHEREUM_RPC,
-};
 
 export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
   [CHAINS.bsc]: bnb.chains[Env.Testnet],

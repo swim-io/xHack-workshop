@@ -18,7 +18,10 @@ import {
 } from "@mui/material";
 import { useFormik } from "formik";
 import type { FC } from "react";
+import { useContext } from "react";
 
+import { CHAINS } from "../config";
+import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
 import type { ChainName, StableCoinTokenProject } from "../types";
 
 const Row = styled(Box)`
@@ -31,6 +34,8 @@ type SwapFormProps = {
 };
 
 export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
+  const getEvmProvider = useContext(GetEvmProviderContext);
+
   const formik = useFormik({
     initialValues: {
       sourceChain: chains[0],
@@ -43,6 +48,10 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
     },
     onSubmit: (values) => {
       console.info("submitting values", values);
+      console.info(
+        "sourceChainProvider",
+        getEvmProvider(CHAINS[values.sourceChain]),
+      );
     },
   });
 
