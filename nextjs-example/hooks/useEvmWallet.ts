@@ -3,27 +3,16 @@ import { useContext, useEffect, useState } from "react";
 
 import { EvmWalletProviderContext } from "../contexts/EvmWalletProvider";
 
-type EvmWeb3WalletConnected = {
+type EvmWeb3Wallet = {
   readonly adapter: EvmWeb3WalletAdapter;
-  readonly isConnected: true;
-  readonly address: string;
+  readonly address: string | null;
 };
-
-type EvmWeb3WalletDisconnected = {
-  readonly adapter: EvmWeb3WalletAdapter;
-  readonly isConnected: false;
-  readonly address: null;
-};
-
-type EvmWeb3Wallet = EvmWeb3WalletConnected | EvmWeb3WalletDisconnected;
 
 export const useEvmWallet = (): EvmWeb3Wallet => {
-  const [_, setState] = useState(0);
+  const [, setState] = useState(0);
   const evmWalletAdapter = useContext(EvmWalletProviderContext);
 
   if (!evmWalletAdapter) throw new Error("Missing EvmWalletProvider");
-
-  const isConnected = !!evmWalletAdapter.address;
 
   useEffect(() => {
     const reRender = () => setState((prev) => prev + 1);
@@ -32,20 +21,8 @@ export const useEvmWallet = (): EvmWeb3Wallet => {
     evmWalletAdapter.on("error", reRender);
   }, [evmWalletAdapter]);
 
-  if (isConnected) {
-    if (!evmWalletAdapter.address)
-      throw new Error("Evm wallet was connected but with no address");
-
-    return {
-      adapter: evmWalletAdapter,
-      isConnected,
-      address: evmWalletAdapter.address,
-    };
-  }
-
   return {
     adapter: evmWalletAdapter,
-    isConnected: false,
-    address: null,
+    address: evmWalletAdapter.address,
   };
 };

@@ -7,7 +7,7 @@ import { useEvmWallet } from "../hooks/useEvmWallet";
 export const Wallets: FC = () => {
   const wallet = useEvmWallet();
 
-  const evmAction = wallet.isConnected
+  const evmAction = wallet.address
     ? () => void wallet.adapter.disconnect()
     : () => void wallet.adapter.connect();
 
@@ -15,7 +15,7 @@ export const Wallets: FC = () => {
     <Card sx={{ width: "100%" }}>
       <CardContent>
         <Button variant="outlined" onClick={evmAction}>
-          {wallet.isConnected
+          {wallet.address
             ? `Disconnect ${truncate(wallet.address)}`
             : "Connect Metamask"}{" "}
         </Button>
