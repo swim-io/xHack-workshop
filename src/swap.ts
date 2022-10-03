@@ -51,8 +51,8 @@ const bufferToBytesFilter = (buffer: Buffer): Buffer =>
 
 const logEvent =
   (chain: "source" | "target") => (log: string, event: Event) => {
-    console.info(`Propeller tx detected on ${chain} chain`);
     console.table({
+      label: `Propeller tx detected on ${chain} chain`,
       memo: log.replace(/^0x/, ""),
       tx: event.transactionHash,
       block: event.blockHash,
@@ -75,7 +75,8 @@ interface SwapArgs {
   readonly sourceTokenNumber: TokenNumber;
   readonly targetChain: Chain;
   readonly targetTokenNumber: TokenNumber;
-  readonly inputAmount: BigNumber;
+  /** In human units */
+  readonly inputAmount: string;
   readonly gasKickStart: boolean;
   readonly maxPropellerFee: BigNumber;
   readonly overrides?: Overrides;
@@ -98,14 +99,7 @@ const swap = async ({
 
   const sourceProvider = createProvider(sourceChain);
   const targetProvider = createProvider(targetChain);
-
-  const sourceGasBalance = await sourceProvider.getBalance(account.address);
-  console.info(`Source gas balance: ${sourceGasBalance.toString()}`);
-  const targetGasBalance = await targetProvider.getBalance(account.address);
-  console.info(`Target gas balance: ${targetGasBalance.toString()}`);
-
   const sourceWallet = new Wallet(account, sourceProvider);
-  const targetWallet = new Wallet(account, targetProvider);
 
   const sourceRoutingContract = Routing__factory.connect(
     CHAIN_CONFIGS[sourceChain].routingContractAddress,
@@ -113,7 +107,7 @@ const swap = async ({
   );
   const targetRoutingContract = Routing__factory.connect(
     CHAIN_CONFIGS[targetChain].routingContractAddress,
-    targetWallet,
+    targetProvider,
   );
 
   const sourceTokenAddress = TOKEN_ADDRESSES[sourceChain][sourceTokenNumber];
@@ -121,14 +115,39 @@ const swap = async ({
     sourceTokenAddress,
     sourceWallet,
   );
-  const sourceTokenBalance = await sourceTokenContract.balanceOf(
-    account.address,
-  );
-  console.info(`Source token balance: ${sourceTokenBalance.toString()}`);
+  const sourceTokenDecimals = await sourceTokenContract.decimals();
 
+  const targetTokenAddress = TOKEN_ADDRESSES[targetChain][targetTokenNumber];
+  const targetTokenContract = ERC20Token__factory.connect(
+    targetTokenAddress,
+    targetProvider,
+  );
+  const targetTokenDecimals = await targetTokenContract.decimals();
+
+  const getBalances = async () => {
+    const [sourceGas, targetGas, sourceToken, targetToken] = await Promise.all([
+      sourceProvider.getBalance(account.address),
+      targetProvider.getBalance(account.address),
+      sourceTokenContract.balanceOf(account.address),
+      targetTokenContract.balanceOf(account.address),
+    ]);
+    return {
+      sourceGas: utils.formatEther(sourceGas),
+      targetGas: utils.formatEther(targetGas),
+      sourceToken: utils.formatUnits(sourceToken, sourceTokenDecimals),
+      targetToken: utils.formatUnits(targetToken, targetTokenDecimals),
+    };
+  };
+  const initialBalances = await getBalances();
+  console.table({
+    label: "Initial balances",
+    ...initialBalances,
+  });
+
+  const inputAmountAtomic = utils.parseUnits(inputAmount, sourceTokenDecimals);
   const approvalResponse = await sourceTokenContract.approve(
     CHAIN_CONFIGS[sourceChain].routingContractAddress,
-    inputAmount,
+    inputAmountAtomic,
   );
   console.info(
     `Source chain approval transaction hash: ${approvalResponse.hash}`,
@@ -142,7 +161,6 @@ const swap = async ({
 
   // NOTE: Please always use random bytes to avoid conflicts with other users
   const memo = crypto.randomBytes(SWIM_MEMO_LENGTH);
-  console.info(`Using memo: ${memo.toString("hex")}`);
 
   const sourceFilter = sourceRoutingContract.filters.MemoInteraction(
     bufferToBytesFilter(memo),
@@ -151,12 +169,22 @@ const swap = async ({
   const targetFilter = targetRoutingContract.filters.MemoInteraction(
     bufferToBytesFilter(memo),
   );
-  targetRoutingContract.once(targetFilter, logEvent("target"));
+  targetRoutingContract.once(targetFilter, () => {
+    logEvent("target");
+    getBalances()
+      .then((finalBalances) => {
+        console.table({
+          label: "Final balances",
+          ...finalBalances,
+        });
+      })
+      .catch(console.error);
+  });
 
-  console.info("Sending propeller kick-off tx...");
   console.table({
+    label: "Propeller kick-off tx params",
     sourceToken: sourceTokenAddress,
-    inputAmount: inputAmount.toString(),
+    inputAmountAtomic: inputAmountAtomic.toString(),
     targetChain,
     targetOwner,
     gasKickStart,
@@ -168,7 +196,7 @@ const swap = async ({
     "propellerInitiate(address,uint256,uint16,bytes32,bool,uint64,uint16,bytes16)"
   ](
     sourceTokenAddress,
-    inputAmount,
+    inputAmountAtomic,
     targetChain,
     targetOwner,
     gasKickStart,
@@ -201,35 +229,35 @@ const main = async (): Promise<void> => {
     process.exit(1);
   }
 
-  // console.info("BNB USDT -> ETH USDC");
-  // await swap({
-  //   mnemonic: MNEMONIC,
-  //   hdPath: HD_PATH,
-  //   sourceChain: CHAINS.bsc,
-  //   sourceTokenNumber: TokenNumber.Usdt,
-  //   targetChain: CHAINS.ethereum,
-  //   targetTokenNumber: TokenNumber.Usdc,
-  //   inputAmount: ETH_TO_WEI.mul(6),
-  //   gasKickStart: false,
-  //   maxPropellerFee: ETH_TO_WEI.mul(1),
-  // });
-
-  console.info("ETH USDC -> BNB USDT");
+  console.info("BNB USDT -> ETH USDC");
   await swap({
     mnemonic: MNEMONIC,
     hdPath: HD_PATH,
-    sourceChain: CHAINS.ethereum,
-    sourceTokenNumber: TokenNumber.Usdc,
-    targetChain: CHAINS.bsc,
-    targetTokenNumber: TokenNumber.Usdt,
-    inputAmount: BigNumber.from(12345),
+    sourceChain: CHAINS.bsc,
+    sourceTokenNumber: TokenNumber.Usdt,
+    targetChain: CHAINS.ethereum,
+    targetTokenNumber: TokenNumber.Usdc,
+    inputAmount: "1.23",
     gasKickStart: false,
     maxPropellerFee: ETH_TO_WEI.mul(1),
-    overrides: {
-      gasLimit: "500000",
-      gasPrice: "200000000000",
-    },
   });
+
+  // console.info("ETH USDC -> BNB USDT");
+  // await swap({
+  //   mnemonic: MNEMONIC,
+  //   hdPath: HD_PATH,
+  //   sourceChain: CHAINS.ethereum,
+  //   sourceTokenNumber: TokenNumber.Usdc,
+  //   targetChain: CHAINS.bsc,
+  //   targetTokenNumber: TokenNumber.Usdt,
+  //   inputAmount: "1.23",
+  //   gasKickStart: false,
+  //   maxPropellerFee: ETH_TO_WEI.mul(1),
+  //   overrides: {
+  //     gasLimit: "500000",
+  //     gasPrice: "200000000000",
+  //   },
+  // });
 };
 
 main().catch(console.error);
