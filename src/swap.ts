@@ -2,22 +2,15 @@ import crypto from "crypto";
 
 import { CHAINS, parseSequenceFromLogEth } from "@certusone/wormhole-sdk";
 import type { ChainConfig } from "@swim-io/core";
-import { Env } from "@swim-io/core";
+import { Env, getTokenDetails } from "@swim-io/core";
 import { bnb, ethereum } from "@swim-io/evm";
 import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
+import { TOKEN_PROJECTS_BY_ID, TokenProjectId } from "@swim-io/token-projects";
 import type { Event, Overrides } from "ethers";
 import { BigNumber, Wallet, providers, utils } from "ethers";
 
 type SupportedChains = "bsc" | "ethereum";
 type Chain = typeof CHAINS[SupportedChains];
-
-// TODO: Get from @swim-io/token-projects
-enum TokenNumber {
-  SwimUsd,
-  Usdc,
-  Usdt,
-  Busd,
-}
 
 const RPC_URLS: Record<Chain, string | undefined> = {
   [CHAINS.bsc]: process.env.BNB_RPC,
@@ -27,18 +20,6 @@ const RPC_URLS: Record<Chain, string | undefined> = {
 const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
   [CHAINS.bsc]: bnb.chains[Env.Testnet],
   [CHAINS.ethereum]: ethereum.chains[Env.Testnet],
-};
-
-// TODO: Get from chain configs
-const TOKEN_ADDRESSES: Record<Chain, Record<number, string>> = {
-  [CHAINS.bsc]: {
-    [TokenNumber.Busd]: "0x92934a8b10DDF85e81B65Be1D6810544744700dC",
-    [TokenNumber.Usdt]: "0x98529E942FD121d9C470c3d4431A008257E0E714",
-  },
-  [CHAINS.ethereum]: {
-    [TokenNumber.Usdc]: "0x45B167CF5b14007Ca0490dCfB7C4B870Ec0C0Aa6",
-    [TokenNumber.Usdt]: "0x996f42BdB0CB71F831C2eFB05Ac6d0d226979e5B",
-  },
 };
 
 const ETH_TO_WEI = BigNumber.from(10).pow(18);
@@ -72,9 +53,9 @@ interface SwapArgs {
   readonly mnemonic: string;
   readonly hdPath: string;
   readonly sourceChain: Chain;
-  readonly sourceTokenNumber: TokenNumber;
+  readonly sourceTokenProjectId: TokenProjectId;
   readonly targetChain: Chain;
-  readonly targetTokenNumber: TokenNumber;
+  readonly targetTokenProjectId: TokenProjectId;
   /** In human units */
   readonly inputAmount: string;
   readonly gasKickStart: boolean;
@@ -86,9 +67,9 @@ const swap = async ({
   mnemonic,
   hdPath,
   sourceChain,
-  sourceTokenNumber,
+  sourceTokenProjectId,
   targetChain,
-  targetTokenNumber,
+  targetTokenProjectId,
   inputAmount,
   gasKickStart,
   maxPropellerFee,
@@ -97,12 +78,14 @@ const swap = async ({
   const account = utils.HDNode.fromMnemonic(mnemonic).derivePath(hdPath);
   console.info(`Account address: ${account.address}`);
 
+  const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
+  const targetChainConfig = CHAIN_CONFIGS[targetChain];
   const sourceProvider = createProvider(sourceChain);
   const targetProvider = createProvider(targetChain);
   const sourceWallet = new Wallet(account, sourceProvider);
 
   const sourceRoutingContract = Routing__factory.connect(
-    CHAIN_CONFIGS[sourceChain].routingContractAddress,
+    sourceChainConfig.routingContractAddress,
     sourceWallet,
   );
   const targetRoutingContract = Routing__factory.connect(
@@ -110,19 +93,28 @@ const swap = async ({
     targetProvider,
   );
 
-  const sourceTokenAddress = TOKEN_ADDRESSES[sourceChain][sourceTokenNumber];
+  const sourceTokenDetails = getTokenDetails(
+    sourceChainConfig,
+    sourceTokenProjectId,
+  );
   const sourceTokenContract = ERC20Token__factory.connect(
-    sourceTokenAddress,
+    sourceTokenDetails.address,
     sourceWallet,
   );
-  const sourceTokenDecimals = await sourceTokenContract.decimals();
 
-  const targetTokenAddress = TOKEN_ADDRESSES[targetChain][targetTokenNumber];
+  const { tokenNumber: targetTokenNumber } =
+    TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
+  if (targetTokenNumber === null) {
+    throw new Error("Invalid target token");
+  }
+  const targetTokenDetails = getTokenDetails(
+    targetChainConfig,
+    targetTokenProjectId,
+  );
   const targetTokenContract = ERC20Token__factory.connect(
-    targetTokenAddress,
+    targetTokenDetails.address,
     targetProvider,
   );
-  const targetTokenDecimals = await targetTokenContract.decimals();
 
   const getBalances = async () => {
     const [sourceGas, targetGas, sourceToken, targetToken] = await Promise.all([
@@ -134,8 +126,8 @@ const swap = async ({
     return {
       sourceGas: utils.formatEther(sourceGas),
       targetGas: utils.formatEther(targetGas),
-      sourceToken: utils.formatUnits(sourceToken, sourceTokenDecimals),
-      targetToken: utils.formatUnits(targetToken, targetTokenDecimals),
+      sourceToken: utils.formatUnits(sourceToken, sourceTokenDetails.decimals),
+      targetToken: utils.formatUnits(targetToken, targetTokenDetails.decimals),
     };
   };
   const initialBalances = await getBalances();
@@ -144,7 +136,10 @@ const swap = async ({
     ...initialBalances,
   });
 
-  const inputAmountAtomic = utils.parseUnits(inputAmount, sourceTokenDecimals);
+  const inputAmountAtomic = utils.parseUnits(
+    inputAmount,
+    sourceTokenDetails.decimals,
+  );
   const approvalResponse = await sourceTokenContract.approve(
     CHAIN_CONFIGS[sourceChain].routingContractAddress,
     inputAmountAtomic,
@@ -183,7 +178,7 @@ const swap = async ({
 
   console.table({
     label: "Propeller kick-off tx params",
-    sourceToken: sourceTokenAddress,
+    sourceToken: sourceTokenDetails.address,
     inputAmountAtomic: inputAmountAtomic.toString(),
     targetChain,
     targetOwner,
@@ -195,7 +190,7 @@ const swap = async ({
   const kickOffResponse = await sourceRoutingContract[
     "propellerInitiate(address,uint256,uint16,bytes32,bool,uint64,uint16,bytes16)"
   ](
-    sourceTokenAddress,
+    sourceTokenDetails.address,
     inputAmountAtomic,
     targetChain,
     targetOwner,
@@ -234,9 +229,9 @@ const main = async (): Promise<void> => {
     mnemonic: MNEMONIC,
     hdPath: HD_PATH,
     sourceChain: CHAINS.bsc,
-    sourceTokenNumber: TokenNumber.Usdt,
+    sourceTokenProjectId: TokenProjectId.Usdt,
     targetChain: CHAINS.ethereum,
-    targetTokenNumber: TokenNumber.Usdc,
+    targetTokenProjectId: TokenProjectId.Usdc,
     inputAmount: "1.23",
     gasKickStart: false,
     maxPropellerFee: ETH_TO_WEI.mul(1),
@@ -247,9 +242,9 @@ const main = async (): Promise<void> => {
   //   mnemonic: MNEMONIC,
   //   hdPath: HD_PATH,
   //   sourceChain: CHAINS.ethereum,
-  //   sourceTokenNumber: TokenNumber.Usdc,
+  //   sourceTokenProjectId: TokenProjectId.Usdc,
   //   targetChain: CHAINS.bsc,
-  //   targetTokenNumber: TokenNumber.Usdt,
+  //   targetTokenProjectId: TokenProjectId.Usdt,
   //   inputAmount: "1.23",
   //   gasKickStart: false,
   //   maxPropellerFee: ETH_TO_WEI.mul(1),
