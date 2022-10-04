@@ -140,14 +140,20 @@ const swap = async ({
     inputAmount,
     sourceTokenDetails.decimals,
   );
-  const approvalResponse = await sourceTokenContract.approve(
+  const currentApprovalAmountAtomic = await sourceTokenContract.allowance(
+    sourceWallet.address,
     CHAIN_CONFIGS[sourceChain].routingContractAddress,
-    inputAmountAtomic,
   );
-  console.info(
-    `Source chain approval transaction hash: ${approvalResponse.hash}`,
-  );
-  await approvalResponse.wait();
+  if (currentApprovalAmountAtomic.lt(inputAmountAtomic)) {
+    const approvalResponse = await sourceTokenContract.approve(
+      CHAIN_CONFIGS[sourceChain].routingContractAddress,
+      inputAmountAtomic,
+    );
+    console.info(
+      `Source chain approval transaction hash: ${approvalResponse.hash}`,
+    );
+    await approvalResponse.wait();
+  }
 
   const targetOwner = utils.hexZeroPad(
     account.address,
