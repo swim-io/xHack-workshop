@@ -1,5 +1,5 @@
 import type { CHAINS } from "@certusone/wormhole-sdk";
-import type { TokenProject } from "@swim-io/token-projects";
+import type { TokenProject, TokenProjectId } from "@swim-io/token-projects";
 import type { BigNumber, Overrides } from "ethers";
 
 export type ChainName = "bsc" | "ethereum";
@@ -22,9 +22,9 @@ export const isStablecoin = (
 };
 export interface SwapArgs {
   readonly sourceChain: Chain;
-  readonly sourceTokenNumber: number;
+  readonly sourceTokenProjectId: TokenProjectId;
   readonly targetChain: Chain;
-  readonly targetTokenNumber: number;
+  readonly targetTokenProjectId: TokenProjectId;
   readonly inputAmount: BigNumber;
   readonly gasKickStart: boolean;
   readonly maxPropellerFee: BigNumber;

@@ -1,14 +1,12 @@
 import { parseSequenceFromLogEth } from "@certusone/wormhole-sdk";
+import { getTokenDetails } from "@swim-io/core";
 import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
+import { TOKEN_PROJECTS_BY_ID } from "@swim-io/token-projects";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { utils } from "ethers";
 import { useContext, useRef } from "react";
 
-import {
-  CHAIN_CONFIGS,
-  TOKEN_ADDRESSES,
-  WORMHOLE_ADDRESS_LENGTH,
-} from "../config";
+import { CHAIN_CONFIGS, WORMHOLE_ADDRESS_LENGTH } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
 import type { SwapArgs, TxRecord } from "../types";
 import { bufferToBytesFilter, generateId, logEvent } from "../utils";
@@ -28,9 +26,9 @@ export const useEvmToEvmSwap = (
   return useMutation(
     async ({
       sourceChain,
-      sourceTokenNumber,
+      sourceTokenProjectId,
       targetChain,
-      targetTokenNumber,
+      targetTokenProjectId,
       inputAmount,
       gasKickStart,
       maxPropellerFee,
@@ -45,8 +43,13 @@ export const useEvmToEvmSwap = (
       const pendingTransactions = sourceChain === targetChain ? 1 : 2;
       pendingTransactionsCount.current = pendingTransactions; // eslint-disable-line functional/immutable-data
 
-      const sourceTokenAddress =
-        TOKEN_ADDRESSES[sourceChain][sourceTokenNumber];
+      const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
+      const sourceTokenDetails = getTokenDetails(
+        sourceChainConfig,
+        sourceTokenProjectId,
+      );
+
+      const sourceTokenAddress = sourceTokenDetails.address;
       const sourceTokenContract = ERC20Token__factory.connect(
         sourceTokenAddress,
         signer,
@@ -95,6 +98,13 @@ export const useEvmToEvmSwap = (
         }),
       );
 
+      const { tokenNumber: targetTokenNumber } =
+        TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
+
+      if (targetTokenNumber === null) {
+        throw new Error("Invalid target token");
+      }
+
       console.info("Sending propeller kick-off tx...");
       console.table({
         sourceToken: sourceTokenAddress,
@@ -133,7 +143,7 @@ export const useEvmToEvmSwap = (
 
       while (pendingTransactionsCount.current > 0) {
         console.info(
-          `Still waiting for ${pendingTransactionsCount.current} transactions.`,
+          `Still waiting for ${pendingTransactionsCount.current} pending transaction(s).`,
         );
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }

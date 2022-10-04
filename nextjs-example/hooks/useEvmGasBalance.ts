@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
-import type { BigNumber } from "ethers";
+import { utils } from "ethers";
 import { useContext } from "react";
 
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
@@ -10,12 +10,15 @@ import { useEvmWallet } from "./useEvmWallet";
 
 export const useEvmGasBalance = (
   chain: Chain,
-): UseQueryResult<BigNumber | null, Error> => {
+): UseQueryResult<string | null, Error> => {
   const evmWallet = useEvmWallet();
   const getEvmProvider = useContext(GetEvmProviderContext);
 
-  return useQuery(["evmGasBalance", chain, evmWallet.address], () => {
+  return useQuery(["evmGasBalance", chain, evmWallet.address], async () => {
     if (!evmWallet.address) return null;
-    return getEvmProvider(chain).getBalance(evmWallet.address);
+    const atomicBalance = await getEvmProvider(chain).getBalance(
+      evmWallet.address,
+    );
+    return utils.formatEther(atomicBalance);
   });
 };

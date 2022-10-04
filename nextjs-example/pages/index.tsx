@@ -4,11 +4,10 @@ import Head from "next/head";
 
 import { SwapForm } from "../components/SwapForm";
 import { Wallets } from "../components/Wallets";
-import { SUPPORTED_CHAINS, TOKEN_PROJECTS_STABLE_COINS } from "../config";
+import { SUPPORTED_CHAINS } from "../config";
 
 const Home: NextPage = () => {
   const chains = SUPPORTED_CHAINS;
-  const tokenProjects = TOKEN_PROJECTS_STABLE_COINS;
 
   return (
     <>
@@ -48,7 +47,7 @@ const Home: NextPage = () => {
           <Box marginBottom="2vh">
             <Wallets />
           </Box>
-          <SwapForm chains={chains} tokenProjects={tokenProjects} />
+          <SwapForm chains={chains} />
         </Box>
       </Grid>
     </>

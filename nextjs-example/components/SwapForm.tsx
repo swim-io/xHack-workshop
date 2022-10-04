@@ -26,27 +26,32 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { getTokenDetails } from "@swim-io/core";
 import type { UseQueryResult } from "@tanstack/react-query";
-import type { BigNumber } from "ethers";
 import { utils } from "ethers";
 import { useFormik } from "formik";
 import type { FC } from "react";
 import { useState } from "react";
 
-import { CHAINS, CHAIN_ID_TO_NAME, TOKEN_DECIMALS } from "../config";
+import {
+  CHAINS,
+  CHAIN_CONFIGS,
+  CHAIN_GAS_TOKEN,
+  CHAIN_ID_TO_NAME,
+  getChainStableCoins,
+} from "../config";
 import {
   useEvmGasBalance,
   useEvmToEvmSwap,
   useEvmTokenBalance,
 } from "../hooks";
-import type { ChainName, StableCoinTokenProject, TxRecord } from "../types";
+import type { ChainName, TxRecord } from "../types";
 
 type SwapFormProps = {
   readonly chains: readonly ChainName[];
-  readonly tokenProjects: readonly StableCoinTokenProject[];
 };
 
-export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
+export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
   const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
   const [transactions, setTransactions] = useState<readonly TxRecord[]>([]);
   const onTransactionDetected = (txRecord: TxRecord) =>
@@ -62,8 +67,8 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
     initialValues: {
       sourceChain: chains[0],
       targetChain: chains[1],
-      sourceTokenNumber: tokenProjects[0].tokenNumber,
-      targetTokenNumber: tokenProjects[1].tokenNumber,
+      sourceTokenProjectId: getChainStableCoins(chains[0])[0].id,
+      targetTokenProjectId: getChainStableCoins(chains[1])[0].id,
       inputAmount: "",
       gasKickStart: false,
       maxPropellerFee: "1",
@@ -85,21 +90,27 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
       setTransactions([]);
 
       try {
+        const chainId = CHAINS[values.sourceChain];
+        const sourceChainConfig = CHAIN_CONFIGS[chainId];
+        const sourceTokenDetails = getTokenDetails(
+          sourceChainConfig,
+          values.sourceTokenProjectId,
+        );
+        const sourceGasToken = CHAIN_GAS_TOKEN[chainId];
+
         await evmToEvmSwap({
           sourceChain: CHAINS[values.sourceChain],
-          sourceTokenNumber: values.sourceTokenNumber,
+          sourceTokenProjectId: values.sourceTokenProjectId,
           targetChain: CHAINS[values.targetChain],
-          targetTokenNumber: values.targetTokenNumber,
+          targetTokenProjectId: values.targetTokenProjectId,
           inputAmount: utils.parseUnits(
             values.inputAmount,
-            TOKEN_DECIMALS[CHAINS[values.sourceChain]][
-              values.sourceTokenNumber
-            ],
+            sourceTokenDetails.decimals,
           ),
           gasKickStart: values.gasKickStart,
           maxPropellerFee: utils.parseUnits(
             values.maxPropellerFee,
-            18, // TODO
+            sourceGasToken.decimals,
           ),
           overrides: {
             gasLimit: "500000",
@@ -121,12 +132,12 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
 
   const sourceTokenBalance = useEvmTokenBalance(
     CHAINS[formik.values.sourceChain],
-    formik.values.sourceTokenNumber,
+    formik.values.sourceTokenProjectId,
   );
 
   const targetTokenBalance = useEvmTokenBalance(
     CHAINS[formik.values.targetChain],
-    formik.values.targetTokenNumber,
+    formik.values.targetTokenProjectId,
   );
 
   const handleCloseSuccessAlert = () => setIsSuccessAlertOpen(false);
@@ -150,7 +161,14 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                   name="sourceChain"
                   value={formik.values.sourceChain}
                   label="Source Chain"
-                  onChange={formik.handleChange}
+                  onChange={(event) => {
+                    void formik.setFieldValue(
+                      "sourceTokenProjectId",
+                      getChainStableCoins(event.target.value as ChainName)[0]
+                        .id,
+                    );
+                    formik.handleChange(event);
+                  }}
                   disabled={formik.isSubmitting}
                 >
                   {chains.map((chainName) => (
@@ -162,23 +180,21 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
               </FormControl>
 
               <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
-                <InputLabel id="sourceTokenNumber">Source Token</InputLabel>
+                <InputLabel id="sourceTokenProjectId">Source Token</InputLabel>
                 <Select
-                  labelId="sourceTokenNumberLabel"
-                  name="sourceTokenNumber"
-                  value={formik.values.sourceTokenNumber}
+                  name="sourceTokenProjectId"
+                  value={formik.values.sourceTokenProjectId}
                   label="Source Token"
                   onChange={formik.handleChange}
                   disabled={formik.isSubmitting}
                 >
-                  {tokenProjects.map((tokenProject) => (
-                    <MenuItem
-                      key={tokenProject.id}
-                      value={tokenProject.tokenNumber}
-                    >
-                      {tokenProject.symbol}
-                    </MenuItem>
-                  ))}
+                  {getChainStableCoins(formik.values.sourceChain).map(
+                    (tokenProject) => (
+                      <MenuItem key={tokenProject.id} value={tokenProject.id}>
+                        {tokenProject.symbol}
+                      </MenuItem>
+                    ),
+                  )}
                 </Select>
               </FormControl>
 
@@ -217,7 +233,14 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                   name="targetChain"
                   value={formik.values.targetChain}
                   label="Target Chain"
-                  onChange={formik.handleChange}
+                  onChange={(event) => {
+                    void formik.setFieldValue(
+                      "targetTokenProjectId",
+                      getChainStableCoins(event.target.value as ChainName)[0]
+                        .id,
+                    );
+                    formik.handleChange(event);
+                  }}
                   disabled={formik.isSubmitting}
                 >
                   {chains.map((chainName) => (
@@ -228,23 +251,21 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                 </Select>
               </FormControl>
               <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
-                <InputLabel id="targetTokenNumber">Target Token</InputLabel>
+                <InputLabel id="targetTokenProjectId">Target Token</InputLabel>
                 <Select
-                  labelId="targetTokenNumberLabel"
-                  name="targetTokenNumber"
-                  value={formik.values.targetTokenNumber}
+                  name="targetTokenProjectId"
+                  value={formik.values.targetTokenProjectId}
                   label="Target Token"
                   onChange={formik.handleChange}
                   disabled={formik.isSubmitting}
                 >
-                  {tokenProjects.map((tokenProject) => (
-                    <MenuItem
-                      key={tokenProject.id}
-                      value={tokenProject.tokenNumber}
-                    >
-                      {tokenProject.symbol}
-                    </MenuItem>
-                  ))}
+                  {getChainStableCoins(formik.values.targetChain).map(
+                    (tokenProject) => (
+                      <MenuItem key={tokenProject.id} value={tokenProject.id}>
+                        {tokenProject.symbol}
+                      </MenuItem>
+                    ),
+                  )}
                 </Select>
               </FormControl>
             </Row>
@@ -326,18 +347,31 @@ const BalanceComponent = ({
   query,
 }: {
   readonly label: string;
-  readonly query: UseQueryResult<BigNumber | null, Error>;
+  readonly query: UseQueryResult<string | null, Error>;
 }) => {
+  let content = null;
+
+  switch (query.status) {
+    case "error": {
+      content = (
+        <Typography component="span" color="red" variant="body2">
+          {query.error.message}
+        </Typography>
+      );
+      break;
+    }
+    case "loading": {
+      content = <CircularProgress size={15} sx={{ ml: 1 }} />;
+      break;
+    }
+    case "success": {
+      content = query.data || "—";
+    }
+  }
+
   return (
-    <Typography paragraph>
-      {label}:{" "}
-      {query.isLoading ? (
-        <CircularProgress size={15} sx={{ ml: 1 }} />
-      ) : query.isSuccess && query.data ? (
-        query.data.toString()
-      ) : (
-        "—"
-      )}
+    <Typography variant="body2">
+      {label}: {content}
     </Typography>
   );
 };
