@@ -16,7 +16,7 @@ const Home: NextPage = () => {
         <title>Swim SDK cross chain swap</title>
         <style>
           {`body {
-              height: calc(100vh - 5vh);
+              min-height: calc(100vh - 5vh);
               background: linear-gradient(
                 60deg,
                 rgba(84, 58, 183, 1) 0%,

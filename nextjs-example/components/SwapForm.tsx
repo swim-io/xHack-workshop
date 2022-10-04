@@ -15,6 +15,7 @@ import {
   MenuItem,
   Paper,
   Select,
+  Snackbar,
   Table,
   TableBody,
   TableCell,
@@ -46,13 +47,16 @@ type SwapFormProps = {
 };
 
 export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
+  const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
   const [transactions, setTransactions] = useState<readonly TxRecord[]>([]);
-  const { mutateAsync: evmToEvmSwap } = useEvmToEvmSwap((txId, chain) =>
+  const onTransactionDetected = (txRecord: TxRecord) =>
     setTransactions((prev) => {
-      if (prev.find((transaction) => transaction.txId === txId)) return prev;
-      return prev.concat([{ txId, chain }]);
-    }),
-  );
+      if (prev.find((transaction) => transaction.txId === txRecord.txId))
+        return prev;
+      return prev.concat([txRecord]);
+    });
+
+  const { mutateAsync: evmToEvmSwap } = useEvmToEvmSwap(onTransactionDetected);
 
   const formik = useFormik({
     initialValues: {
@@ -79,7 +83,6 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
     onSubmit: async (values) => {
       formik.setStatus(null);
       setTransactions([]);
-      console.info("submitting values", values);
 
       try {
         await evmToEvmSwap({
@@ -103,6 +106,8 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
             gasPrice: "200000000000",
           },
         });
+
+        setIsSuccessAlertOpen(true);
       } catch (error) {
         formik.setStatus(
           error instanceof Error ? error.message : String(error),
@@ -124,6 +129,8 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
     formik.values.targetTokenNumber,
   );
 
+  const handleCloseSuccessAlert = () => setIsSuccessAlertOpen(false);
+
   return (
     <>
       <Card sx={{ bgcolor: "background.paper" }}>
@@ -133,7 +140,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
             component="form"
             noValidate
             autoComplete="off"
-            onSubmit={formik.handleSubmit}
+            onSubmit={formik.isSubmitting ? undefined : formik.handleSubmit}
           >
             <Row>
               <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
@@ -144,6 +151,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                   value={formik.values.sourceChain}
                   label="Source Chain"
                   onChange={formik.handleChange}
+                  disabled={formik.isSubmitting}
                 >
                   {chains.map((chainName) => (
                     <MenuItem key={chainName} value={chainName}>
@@ -161,6 +169,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                   value={formik.values.sourceTokenNumber}
                   label="Source Token"
                   onChange={formik.handleChange}
+                  disabled={formik.isSubmitting}
                 >
                   {tokenProjects.map((tokenProject) => (
                     <MenuItem
@@ -179,6 +188,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                   label="Input Amount"
                   value={formik.values.inputAmount}
                   onChange={formik.handleChange}
+                  disabled={formik.isSubmitting}
                   size="small"
                   error={
                     formik.touched.inputAmount && !!formik.errors.inputAmount
@@ -208,6 +218,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                   value={formik.values.targetChain}
                   label="Target Chain"
                   onChange={formik.handleChange}
+                  disabled={formik.isSubmitting}
                 >
                   {chains.map((chainName) => (
                     <MenuItem key={chainName} value={chainName}>
@@ -224,6 +235,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                   value={formik.values.targetTokenNumber}
                   label="Target Token"
                   onChange={formik.handleChange}
+                  disabled={formik.isSubmitting}
                 >
                   {tokenProjects.map((tokenProject) => (
                     <MenuItem
@@ -257,6 +269,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                   label="Max Propeller Fee"
                   value={formik.values.maxPropellerFee}
                   onChange={formik.handleChange}
+                  disabled={formik.isSubmitting}
                   size="small"
                 />
               </FormControl>
@@ -268,6 +281,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                         name="gasKickStart"
                         checked={formik.values.gasKickStart}
                         onChange={formik.handleChange}
+                        disabled={formik.isSubmitting}
                       />
                     }
                     label="Gas kickstart"
@@ -280,6 +294,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
                 type="submit"
                 variant="contained"
                 loading={formik.isSubmitting}
+                fullWidth
               >
                 Swap
               </LoadingButton>
@@ -288,6 +303,16 @@ export const SwapForm: FC<SwapFormProps> = ({ chains, tokenProjects }) => {
         </CardContent>
       </Card>
       {transactions.length > 0 && <Transactions transactions={transactions} />}
+
+      <Snackbar
+        open={isSuccessAlertOpen}
+        autoHideDuration={6000}
+        onClose={handleCloseSuccessAlert}
+      >
+        <Alert onClose={handleCloseSuccessAlert} severity="success">
+          Your swap has been completed!
+        </Alert>
+      </Snackbar>
     </>
   );
 };
@@ -323,7 +348,7 @@ interface TransactionsProps {
 
 const Transactions: FC<TransactionsProps> = ({ transactions }) => {
   return (
-    <TableContainer component={Paper} sx={{ mt: 2 }}>
+    <TableContainer component={Paper} sx={{ mt: 2, mb: 4 }}>
       <Table>
         <TableHead>
           <TableRow>

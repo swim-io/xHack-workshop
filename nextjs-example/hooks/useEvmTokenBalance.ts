@@ -20,7 +20,7 @@ export const useEvmTokenBalance = (
   return useQuery(
     ["evmTokenBalance", chain, tokenNumber, evmWallet.address],
     async () => {
-      if (!evmWallet.address || !evmWallet.adapter.signer) return null;
+      if (!evmWallet.address) return null;
 
       const chainTokens = TOKEN_ADDRESSES[chain];
       const tokenAddress = chainTokens[tokenNumber];

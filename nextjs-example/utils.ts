@@ -1,7 +1,7 @@
 import type { Event } from "ethers";
 
 import { EVM_BYTES_LOG_LENGTH, SWIM_MEMO_LENGTH } from "./config";
-import type { Chain } from "./types";
+import type { Chain, TxRecord } from "./types";
 
 export const generateId = (length = SWIM_MEMO_LENGTH): Buffer => {
   const idBytes = crypto.getRandomValues(new Uint8Array(length));
@@ -15,7 +15,7 @@ export const logEvent =
   (
     chain: "source" | "target",
     chainId: Chain,
-    callback: (txId: string, chainId: Chain) => void,
+    callback?: (txRecord: TxRecord) => void,
   ) =>
   (log: string, event: Event) => {
     console.table({
@@ -24,5 +24,5 @@ export const logEvent =
       tx: event.transactionHash,
       block: event.blockHash,
     });
-    callback(event.transactionHash, chainId);
+    callback && callback({ txId: event.transactionHash, chain: chainId });
   };

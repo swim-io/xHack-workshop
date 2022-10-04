@@ -2,7 +2,7 @@ import { parseSequenceFromLogEth } from "@certusone/wormhole-sdk";
 import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { utils } from "ethers";
-import { useContext } from "react";
+import { useContext, useRef } from "react";
 
 import {
   CHAIN_CONFIGS,
@@ -10,17 +10,20 @@ import {
   WORMHOLE_ADDRESS_LENGTH,
 } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import type { Chain, SwapArgs } from "../types";
+import type { SwapArgs, TxRecord } from "../types";
 import { bufferToBytesFilter, generateId, logEvent } from "../utils";
 
 import { useEvmWallet } from "./useEvmWallet";
 
+export const EVM_TO_EVM_SWAP_MUTATION_KEY = ["evm-to-evm-swap"];
+
 export const useEvmToEvmSwap = (
-  addTransaction: (txId: string, chain: Chain) => void,
+  onTransactionDetected: (txRecord: TxRecord) => void,
 ) => {
   const queryClient = useQueryClient();
   const evmWallet = useEvmWallet();
   const getEvmProvider = useContext(GetEvmProviderContext);
+  const pendingTransactionsCount = useRef(0);
 
   return useMutation(
     async ({
@@ -38,6 +41,9 @@ export const useEvmToEvmSwap = (
         throw new Error(`Please connect your EVM wallet`);
 
       await evmWallet.adapter.switchNetwork(CHAIN_CONFIGS[sourceChain].chainId);
+
+      const pendingTransactions = sourceChain === targetChain ? 1 : 2;
+      pendingTransactionsCount.current = pendingTransactions; // eslint-disable-line functional/immutable-data
 
       const sourceTokenAddress =
         TOKEN_ADDRESSES[sourceChain][sourceTokenNumber];
@@ -73,14 +79,20 @@ export const useEvmToEvmSwap = (
       );
       sourceRoutingContract.once(
         sourceFilter,
-        logEvent("source", sourceChain, addTransaction),
+        logEvent("source", sourceChain, (txRecord) => {
+          onTransactionDetected(txRecord);
+          pendingTransactionsCount.current--; // eslint-disable-line functional/immutable-data
+        }),
       );
       const targetFilter = targetRoutingContract.filters.MemoInteraction(
         bufferToBytesFilter(memo),
       );
       targetRoutingContract.once(
         targetFilter,
-        logEvent("target", targetChain, addTransaction),
+        logEvent("target", targetChain, (txRecord) => {
+          onTransactionDetected(txRecord);
+          pendingTransactionsCount.current--; // eslint-disable-line functional/immutable-data
+        }),
       );
 
       console.info("Sending propeller kick-off tx...");
@@ -118,9 +130,16 @@ export const useEvmToEvmSwap = (
         sourceBridgeContract,
       );
       console.info(`Wormhole sequence: ${sequence}`);
+
+      while (pendingTransactionsCount.current > 0) {
+        console.info(
+          `Still waiting for ${pendingTransactionsCount.current} transactions.`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
     },
     {
-      mutationKey: ["evm-to-evm-swap"],
+      mutationKey: EVM_TO_EVM_SWAP_MUTATION_KEY,
       onSettled: async () => {
         await queryClient.invalidateQueries(["evmTokenBalance"]);
         await queryClient.invalidateQueries(["evmGasBalance"]);
