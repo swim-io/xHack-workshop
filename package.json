@@ -24,9 +24,10 @@
   "dependencies": {
     "@certusone/wormhole-sdk": "^0.6.2",
     "@improbable-eng/grpc-web-node-http-transport": "^0.15.0",
-    "@swim-io/core": "^0.31.0",
-    "@swim-io/evm": "^0.31.0",
-    "@swim-io/evm-contracts": "^0.31.0",
+    "@swim-io/core": "^0.34.0",
+    "@swim-io/evm": "^0.34.0",
+    "@swim-io/evm-contracts": "^0.34.0",
+    "@swim-io/token-projects": "^0.34.0",
     "dotenv": "^16.0.2",
     "ethers": "^5.7.1"
   },
