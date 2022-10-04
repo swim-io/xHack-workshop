@@ -7,7 +7,7 @@ import { bnb, ethereum } from "@swim-io/evm";
 import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
 import { TOKEN_PROJECTS_BY_ID, TokenProjectId } from "@swim-io/token-projects";
 import type { Event, Overrides } from "ethers";
-import { BigNumber, Wallet, providers, utils } from "ethers";
+import { Wallet, providers, utils } from "ethers";
 
 type SupportedChains = "bsc" | "ethereum";
 type Chain = typeof CHAINS[SupportedChains];
@@ -22,7 +22,6 @@ const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
   [CHAINS.ethereum]: ethereum.chains[Env.Testnet],
 };
 
-const ETH_TO_WEI = BigNumber.from(10).pow(18);
 const EVM_BYTES_LOG_LENGTH = 32;
 const SWIM_MEMO_LENGTH = 16;
 const WORMHOLE_ADDRESS_LENGTH = 32;
@@ -59,7 +58,8 @@ interface SwapArgs {
   /** In human units */
   readonly inputAmount: string;
   readonly gasKickStart: boolean;
-  readonly maxPropellerFee: BigNumber;
+  /** In human units */
+  readonly maxPropellerFee: string;
   readonly overrides?: Overrides;
 }
 
@@ -154,6 +154,10 @@ const swap = async ({
     WORMHOLE_ADDRESS_LENGTH,
   );
 
+  const maxPropellerFeeAtomic = utils.parseUnits(
+    maxPropellerFee,
+    targetChainConfig.swimUsdDetails.decimals,
+  );
   // NOTE: Please always use random bytes to avoid conflicts with other users
   const memo = crypto.randomBytes(SWIM_MEMO_LENGTH);
 
@@ -183,7 +187,7 @@ const swap = async ({
     targetChain,
     targetOwner,
     gasKickStart,
-    maxPropellerFee: maxPropellerFee.toString(),
+    maxPropellerFee: maxPropellerFeeAtomic.toString(),
     targetTokenNumber,
     memo: memo.toString("hex"),
   });
@@ -195,7 +199,7 @@ const swap = async ({
     targetChain,
     targetOwner,
     gasKickStart,
-    maxPropellerFee,
+    maxPropellerFeeAtomic,
     targetTokenNumber,
     memo,
     overrides,
@@ -234,7 +238,7 @@ const main = async (): Promise<void> => {
     targetTokenProjectId: TokenProjectId.Usdc,
     inputAmount: "1.23",
     gasKickStart: false,
-    maxPropellerFee: ETH_TO_WEI.mul(1),
+    maxPropellerFee: "5.1",
   });
 
   // console.info("ETH USDC -> BNB USDT");
@@ -247,7 +251,7 @@ const main = async (): Promise<void> => {
   //   targetTokenProjectId: TokenProjectId.Usdt,
   //   inputAmount: "1.23",
   //   gasKickStart: false,
-  //   maxPropellerFee: ETH_TO_WEI.mul(1),
+  //   maxPropellerFee: "5.1",
   //   overrides: {
   //     gasLimit: "500000",
   //     gasPrice: "200000000000",
