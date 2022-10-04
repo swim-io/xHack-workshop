@@ -75,14 +75,21 @@ const swap = async ({
   maxPropellerFee,
   overrides = {},
 }: SwapArgs): Promise<void> => {
+  const { tokenNumber: targetTokenNumber } =
+    TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
+  if (targetTokenNumber === null) {
+    throw new Error("Invalid target token");
+  }
+
   const account = utils.HDNode.fromMnemonic(mnemonic).derivePath(hdPath);
   console.info(`Account address: ${account.address}`);
 
-  const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
-  const targetChainConfig = CHAIN_CONFIGS[targetChain];
   const sourceProvider = createProvider(sourceChain);
   const targetProvider = createProvider(targetChain);
   const sourceWallet = new Wallet(account, sourceProvider);
+
+  const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
+  const targetChainConfig = CHAIN_CONFIGS[targetChain];
 
   const sourceRoutingContract = Routing__factory.connect(
     sourceChainConfig.routingContractAddress,
@@ -101,12 +108,6 @@ const swap = async ({
     sourceTokenDetails.address,
     sourceWallet,
   );
-
-  const { tokenNumber: targetTokenNumber } =
-    TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
-  if (targetTokenNumber === null) {
-    throw new Error("Invalid target token");
-  }
   const targetTokenDetails = getTokenDetails(
     targetChainConfig,
     targetTokenProjectId,
@@ -142,11 +143,11 @@ const swap = async ({
   );
   const currentApprovalAmountAtomic = await sourceTokenContract.allowance(
     sourceWallet.address,
-    CHAIN_CONFIGS[sourceChain].routingContractAddress,
+    sourceChainConfig.routingContractAddress,
   );
   if (currentApprovalAmountAtomic.lt(inputAmountAtomic)) {
     const approvalResponse = await sourceTokenContract.approve(
-      CHAIN_CONFIGS[sourceChain].routingContractAddress,
+      sourceChainConfig.routingContractAddress,
       inputAmountAtomic,
     );
     console.info(
@@ -215,10 +216,9 @@ const swap = async ({
   );
 
   const kickOffReceipt = await kickOffResponse.wait();
-  const sourceBridgeContract = CHAIN_CONFIGS[sourceChain].wormhole.bridge;
   const sequence = parseSequenceFromLogEth(
     kickOffReceipt,
-    sourceBridgeContract,
+    sourceChainConfig.wormhole.bridge,
   );
   console.info(`Wormhole sequence: ${sequence}`);
 };
