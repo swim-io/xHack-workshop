@@ -1,7 +1,7 @@
 import { CHAINS, CHAIN_ID_TO_NAME } from "@certusone/wormhole-sdk";
 import type { ChainConfig, GasToken } from "@swim-io/core";
 import { Env } from "@swim-io/core";
-import { bnb, ethereum } from "@swim-io/evm";
+import { avalanche, bnb, ethereum, fantom, polygon } from "@swim-io/evm";
 import { TOKEN_PROJECTS_BY_ID } from "@swim-io/token-projects";
 import { sortBy } from "lodash";
 
@@ -9,16 +9,31 @@ import type { Chain, ChainName, StableCoinTokenProject } from "./types";
 import { isStablecoin } from "./types";
 
 export { CHAINS, CHAIN_ID_TO_NAME };
-export const SUPPORTED_CHAINS: readonly ChainName[] = ["bsc", "ethereum"];
+
+export const SUPPORTED_CHAINS: readonly ChainName[] = [
+  "avalanche",
+  "bsc",
+  "ethereum",
+  "fantom",
+  "polygon",
+];
+
+const env = Env.Testnet;
 
 export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
-  [CHAINS.bsc]: bnb.chains[Env.Testnet],
-  [CHAINS.ethereum]: ethereum.chains[Env.Testnet],
+  [CHAINS.avalanche]: avalanche.chains[env],
+  [CHAINS.bsc]: bnb.chains[env],
+  [CHAINS.ethereum]: ethereum.chains[env],
+  [CHAINS.fantom]: fantom.chains[env],
+  [CHAINS.polygon]: polygon.chains[env],
 };
 
 export const CHAIN_GAS_TOKEN: Record<Chain, GasToken> = {
+  [CHAINS.avalanche]: avalanche.gasToken,
   [CHAINS.bsc]: bnb.gasToken,
   [CHAINS.ethereum]: ethereum.gasToken,
+  [CHAINS.fantom]: fantom.gasToken,
+  [CHAINS.polygon]: polygon.gasToken,
 };
 
 export const getChainStableCoins = (
