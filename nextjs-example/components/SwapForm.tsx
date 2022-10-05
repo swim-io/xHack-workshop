@@ -149,9 +149,8 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
           >
             <Row>
               <FormControl sx={selectFormControlStyles} size="small">
-                <InputLabel id="sourceChainLabel">Source Chain</InputLabel>
+                <InputLabel>Source Chain</InputLabel>
                 <Select
-                  labelId="sourceChainLabel"
                   name="sourceChain"
                   value={formik.values.sourceChain}
                   label="Source Chain"
@@ -174,7 +173,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
               </FormControl>
 
               <FormControl sx={selectFormControlStyles} size="small">
-                <InputLabel id="sourceTokenProjectId">Source Token</InputLabel>
+                <InputLabel>Source Token</InputLabel>
                 <Select
                   name="sourceTokenProjectId"
                   value={formik.values.sourceTokenProjectId}
@@ -218,9 +217,8 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
 
             <Row>
               <FormControl sx={selectFormControlStyles} size="small">
-                <InputLabel id="targetChainLabel">Target Chain</InputLabel>
+                <InputLabel>Target Chain</InputLabel>
                 <Select
-                  labelId="targetChainLabel"
                   name="targetChain"
                   value={formik.values.targetChain}
                   label="Target Chain"
@@ -250,7 +248,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 )}
               </FormControl>
               <FormControl sx={selectFormControlStyles} size="small">
-                <InputLabel id="targetTokenProjectId">Target Token</InputLabel>
+                <InputLabel>Target Token</InputLabel>
                 <Select
                   name="targetTokenProjectId"
                   value={formik.values.targetTokenProjectId}
@@ -292,7 +290,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
               </FormControl>
               <FormControl>
                 <Tooltip
-                  placement="top"
+                  placement="top-start"
                   title="Enable to receive some gas tokens on the target chain (coming soon)"
                 >
                   <FormControlLabel
@@ -346,6 +344,12 @@ const Row = styled(Box)`
 
     &:last-child {
       margin-right: 0;
+    }
+  }
+
+  @media (max-width: 456px) {
+    & > .MuiFormControl-root {
+      margin-bottom: 20px;
     }
   }
 `;
