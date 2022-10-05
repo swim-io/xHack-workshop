@@ -6,7 +6,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { utils } from "ethers";
 import { useContext, useRef } from "react";
 
-import { CHAIN_CONFIGS, WORMHOLE_ADDRESS_LENGTH } from "../config";
+import {
+  CHAIN_CONFIGS,
+  CHAIN_GAS_TOKEN,
+  WORMHOLE_ADDRESS_LENGTH,
+} from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
 import type { SwapArgs, TxRecord } from "../types";
 import { bufferToBytesFilter, generateId, handleEvent } from "../utils";
@@ -21,7 +25,6 @@ export const useEvmToEvmSwap = (
   const queryClient = useQueryClient();
   const evmWallet = useEvmWallet();
   const getEvmProvider = useContext(GetEvmProviderContext);
-  const pendingTransactionsCount = useRef(2);
 
   return useMutation(
     async ({
@@ -52,11 +55,21 @@ export const useEvmToEvmSwap = (
         sourceChainConfig,
         sourceTokenProjectId,
       );
-
       const sourceTokenAddress = sourceTokenDetails.address;
       const sourceTokenContract = ERC20Token__factory.connect(
         sourceTokenAddress,
         signer,
+      );
+
+      const inputAmountAtomic = utils.parseUnits(
+        inputAmount,
+        sourceTokenDetails.decimals,
+      );
+
+      const sourceGasToken = CHAIN_GAS_TOKEN[sourceChain];
+      const maxPropellerFeeAtomic = utils.parseUnits(
+        maxPropellerFee,
+        sourceGasToken.decimals,
       );
 
       const currentApprovalAmountAtomic = await sourceTokenContract.allowance(
@@ -64,10 +77,10 @@ export const useEvmToEvmSwap = (
         sourceChainConfig.routingContractAddress,
       );
 
-      if (currentApprovalAmountAtomic.lt(inputAmount)) {
+      if (currentApprovalAmountAtomic.lt(inputAmountAtomic)) {
         const approvalResponse = await sourceTokenContract.approve(
           sourceChainConfig.routingContractAddress,
-          inputAmount,
+          inputAmountAtomic,
         );
         await approvalResponse.wait();
       }
@@ -95,28 +108,30 @@ export const useEvmToEvmSwap = (
         sourceFilter,
         handleEvent("source", sourceChain, (txRecord) => {
           onTransactionDetected(txRecord);
-          pendingTransactionsCount.current--; // eslint-disable-line functional/immutable-data
         }),
       );
       const targetFilter = targetRoutingContract.filters.MemoInteraction(
         bufferToBytesFilter(memo),
       );
-      targetRoutingContract.once(
-        targetFilter,
-        handleEvent("target", targetChain, (txRecord) => {
-          onTransactionDetected(txRecord);
-          pendingTransactionsCount.current--; // eslint-disable-line functional/immutable-data
-        }),
-      );
+
+      const finalPromise = new Promise((resolve) => {
+        targetRoutingContract.once(
+          targetFilter,
+          handleEvent("target", targetChain, (txRecord) => {
+            onTransactionDetected(txRecord);
+            resolve(null);
+          }),
+        );
+      });
 
       console.info("Sending propeller kick-off tx...");
       console.table({
         sourceToken: sourceTokenAddress,
-        inputAmount: inputAmount.toString(),
+        inputAmount: inputAmountAtomic.toString(),
         targetChain,
         targetOwner,
         gasKickStart,
-        maxPropellerFee: maxPropellerFee.toString(),
+        maxPropellerFee: maxPropellerFeeAtomic.toString(),
         targetTokenNumber,
         memo: memo.toString("hex"),
       });
@@ -124,11 +139,11 @@ export const useEvmToEvmSwap = (
         "propellerInitiate(address,uint256,uint16,bytes32,bool,uint64,uint16,bytes16)"
       ](
         sourceTokenAddress,
-        inputAmount,
+        inputAmountAtomic,
         targetChain,
         targetOwner,
         gasKickStart,
-        maxPropellerFee,
+        maxPropellerFeeAtomic,
         targetTokenNumber,
         memo,
         overrides,
@@ -145,12 +160,7 @@ export const useEvmToEvmSwap = (
       );
       console.info(`Wormhole sequence: ${sequence}`);
 
-      while (pendingTransactionsCount.current > 0) {
-        console.info(
-          `Still waiting for ${pendingTransactionsCount.current} pending transaction(s).`,
-        );
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
+      await finalPromise;
     },
     {
       mutationKey: EVM_TO_EVM_SWAP_MUTATION_KEY,

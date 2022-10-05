@@ -19,19 +19,12 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { getTokenDetails } from "@swim-io/core";
 import type { TokenProjectId } from "@swim-io/token-projects";
-import { utils } from "ethers";
 import { useFormik } from "formik";
 import type { FC } from "react";
 import { useState } from "react";
 
-import {
-  CHAINS,
-  CHAIN_CONFIGS,
-  CHAIN_GAS_TOKEN,
-  getChainStableCoins,
-} from "../config";
+import { CHAINS, getChainStableCoins } from "../config";
 import {
   useEvmGasBalance,
   useEvmToEvmSwap,
@@ -57,7 +50,7 @@ interface SwapFormikState {
 }
 
 export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
-  const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
+  // Setup a local state for all the transactions that will be created
   const [transactions, setTransactions] = useState<readonly TxRecord[]>([]);
   const onTransactionDetected = (txRecord: TxRecord) =>
     setTransactions((prev) => {
@@ -66,7 +59,11 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       return prev.concat([txRecord]);
     });
 
+  // evm to evm swap implementation
   const { mutateAsync: evmToEvmSwap } = useEvmToEvmSwap(onTransactionDetected);
+
+  // display an alert on successful swaps
+  const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
 
   const formik = useFormik<SwapFormikState>({
     initialValues: {
@@ -84,28 +81,14 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       setTransactions([]);
 
       try {
-        const chainId = CHAINS[values.sourceChain];
-        const sourceChainConfig = CHAIN_CONFIGS[chainId];
-        const sourceTokenDetails = getTokenDetails(
-          sourceChainConfig,
-          values.sourceTokenProjectId,
-        );
-        const sourceGasToken = CHAIN_GAS_TOKEN[chainId];
-
         await evmToEvmSwap({
           sourceChain: CHAINS[values.sourceChain],
           sourceTokenProjectId: values.sourceTokenProjectId,
           targetChain: CHAINS[values.targetChain],
           targetTokenProjectId: values.targetTokenProjectId,
-          inputAmount: utils.parseUnits(
-            values.inputAmount,
-            sourceTokenDetails.decimals,
-          ),
+          inputAmount: values.inputAmount,
           gasKickStart: values.gasKickStart,
-          maxPropellerFee: utils.parseUnits(
-            values.maxPropellerFee,
-            sourceGasToken.decimals,
-          ),
+          maxPropellerFee: values.maxPropellerFee,
         });
 
         setIsSuccessAlertOpen(true);
@@ -117,14 +100,13 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
     },
   });
 
+  // Get balances for gas token and selected tokens of each chain
   const sourceGasBalance = useEvmGasBalance(CHAINS[formik.values.sourceChain]);
   const targetGasBalance = useEvmGasBalance(CHAINS[formik.values.targetChain]);
-
   const sourceTokenBalance = useEvmTokenBalance(
     CHAINS[formik.values.sourceChain],
     formik.values.sourceTokenProjectId,
   );
-
   const targetTokenBalance = useEvmTokenBalance(
     CHAINS[formik.values.targetChain],
     formik.values.targetTokenProjectId,

@@ -25,9 +25,9 @@ export interface SwapArgs {
   readonly sourceTokenProjectId: TokenProjectId;
   readonly targetChain: Chain;
   readonly targetTokenProjectId: TokenProjectId;
-  readonly inputAmount: BigNumber;
+  readonly inputAmount: string;
   readonly gasKickStart: boolean;
-  readonly maxPropellerFee: BigNumber;
+  readonly maxPropellerFee: string;
   readonly overrides?: Overrides;
 }
 
