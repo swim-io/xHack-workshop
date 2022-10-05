@@ -59,11 +59,18 @@ export const useEvmToEvmSwap = (
         signer,
       );
 
-      const approvalResponse = await sourceTokenContract.approve(
-        CHAIN_CONFIGS[sourceChain].routingContractAddress,
-        inputAmount,
+      const currentApprovalAmountAtomic = await sourceTokenContract.allowance(
+        address,
+        sourceChainConfig.routingContractAddress,
       );
-      await approvalResponse.wait();
+
+      if (currentApprovalAmountAtomic.lt(inputAmount)) {
+        const approvalResponse = await sourceTokenContract.approve(
+          sourceChainConfig.routingContractAddress,
+          inputAmount,
+        );
+        await approvalResponse.wait();
+      }
 
       const targetOwner = utils.hexZeroPad(address, WORMHOLE_ADDRESS_LENGTH);
 
