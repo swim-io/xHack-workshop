@@ -9,7 +9,7 @@ import { useContext, useRef } from "react";
 import { CHAIN_CONFIGS, WORMHOLE_ADDRESS_LENGTH } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
 import type { SwapArgs, TxRecord } from "../types";
-import { bufferToBytesFilter, generateId, logEvent } from "../utils";
+import { bufferToBytesFilter, generateId, handleEvent } from "../utils";
 
 import { useEvmWallet } from "./useEvmWallet";
 
@@ -86,7 +86,7 @@ export const useEvmToEvmSwap = (
       );
       sourceRoutingContract.once(
         sourceFilter,
-        logEvent("source", sourceChain, (txRecord) => {
+        handleEvent("source", sourceChain, (txRecord) => {
           onTransactionDetected(txRecord);
           pendingTransactionsCount.current--; // eslint-disable-line functional/immutable-data
         }),
@@ -96,7 +96,7 @@ export const useEvmToEvmSwap = (
       );
       targetRoutingContract.once(
         targetFilter,
-        logEvent("target", targetChain, (txRecord) => {
+        handleEvent("target", targetChain, (txRecord) => {
           onTransactionDetected(txRecord);
           pendingTransactionsCount.current--; // eslint-disable-line functional/immutable-data
         }),

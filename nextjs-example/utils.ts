@@ -11,7 +11,7 @@ export const generateId = (length = SWIM_MEMO_LENGTH): Buffer => {
 export const bufferToBytesFilter = (buffer: Buffer): Buffer =>
   Buffer.concat([buffer, Buffer.alloc(EVM_BYTES_LOG_LENGTH - buffer.length)]);
 
-export const logEvent =
+export const handleEvent =
   (
     chain: "source" | "target",
     chainId: Chain,
