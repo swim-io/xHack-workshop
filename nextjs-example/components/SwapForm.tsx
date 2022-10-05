@@ -11,6 +11,7 @@ import {
   Divider,
   FormControl,
   FormControlLabel,
+  FormHelperText,
   InputLabel,
   MenuItem,
   Paper,
@@ -81,6 +82,13 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
         Number(values.inputAmount) <= 0
       ) {
         errors = { ...errors, inputAmount: "Please enter a valid amount" };
+      }
+
+      if (values.sourceChain === values.targetChain) {
+        errors = {
+          ...errors,
+          targetChain: "Only cross-chain swaps are supported in this form",
+        };
       }
 
       return errors;
@@ -226,7 +234,10 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
             <Divider />
 
             <Row>
-              <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
+              <FormControl
+                sx={{ m: 1, minWidth: 120, maxWidth: 120 }}
+                size="small"
+              >
                 <InputLabel id="targetChainLabel">Target Chain</InputLabel>
                 <Select
                   labelId="targetChainLabel"
@@ -242,6 +253,9 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                     formik.handleChange(event);
                   }}
                   disabled={formik.isSubmitting}
+                  error={
+                    formik.touched.targetChain && !!formik.errors.targetChain
+                  }
                 >
                   {chains.map((chainName) => (
                     <MenuItem key={chainName} value={chainName}>
@@ -249,6 +263,11 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                     </MenuItem>
                   ))}
                 </Select>
+                {formik.touched.targetChain && !!formik.errors.targetChain && (
+                  <FormHelperText error>
+                    {formik.errors.targetChain}
+                  </FormHelperText>
+                )}
               </FormControl>
               <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
                 <InputLabel id="targetTokenProjectId">Target Token</InputLabel>
@@ -323,6 +342,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
           </Box>
         </CardContent>
       </Card>
+
       {transactions.length > 0 && <Transactions transactions={transactions} />}
 
       <Snackbar

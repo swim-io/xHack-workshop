@@ -21,7 +21,7 @@ export const useEvmToEvmSwap = (
   const queryClient = useQueryClient();
   const evmWallet = useEvmWallet();
   const getEvmProvider = useContext(GetEvmProviderContext);
-  const pendingTransactionsCount = useRef(0);
+  const pendingTransactionsCount = useRef(2);
 
   return useMutation(
     async ({
@@ -46,9 +46,6 @@ export const useEvmToEvmSwap = (
       }
 
       await evmWallet.adapter.switchNetwork(CHAIN_CONFIGS[sourceChain].chainId);
-
-      const pendingTransactions = sourceChain === targetChain ? 1 : 2;
-      pendingTransactionsCount.current = pendingTransactions; // eslint-disable-line functional/immutable-data
 
       const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
       const sourceTokenDetails = getTokenDetails(
