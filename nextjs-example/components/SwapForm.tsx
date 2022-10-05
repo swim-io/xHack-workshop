@@ -7,28 +7,20 @@ import {
   CardActions,
   CardContent,
   Checkbox,
-  CircularProgress,
   Divider,
   FormControl,
   FormControlLabel,
   FormHelperText,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { getTokenDetails } from "@swim-io/core";
-import type { UseQueryResult } from "@tanstack/react-query";
+import type { TokenProjectId } from "@swim-io/token-projects";
 import { utils } from "ethers";
 import { useFormik } from "formik";
 import type { FC } from "react";
@@ -38,7 +30,6 @@ import {
   CHAINS,
   CHAIN_CONFIGS,
   CHAIN_GAS_TOKEN,
-  CHAIN_ID_TO_NAME,
   getChainStableCoins,
 } from "../config";
 import {
@@ -48,9 +39,22 @@ import {
 } from "../hooks";
 import type { ChainName, TxRecord } from "../types";
 
+import { BalanceQuery } from "./BalanceQuery";
+import { Transactions } from "./Transactions";
+
 type SwapFormProps = {
   readonly chains: readonly ChainName[];
 };
+
+interface SwapFormikState {
+  readonly sourceChain: ChainName;
+  readonly targetChain: ChainName;
+  readonly sourceTokenProjectId: TokenProjectId;
+  readonly targetTokenProjectId: TokenProjectId;
+  readonly inputAmount: string;
+  readonly gasKickStart: boolean;
+  readonly maxPropellerFee: string;
+}
 
 export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
   const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
@@ -64,7 +68,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
 
   const { mutateAsync: evmToEvmSwap } = useEvmToEvmSwap(onTransactionDetected);
 
-  const formik = useFormik({
+  const formik = useFormik<SwapFormikState>({
     initialValues: {
       sourceChain: chains[0],
       targetChain: chains[1],
@@ -74,25 +78,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       gasKickStart: false,
       maxPropellerFee: "1",
     },
-    validate(values) {
-      let errors: Record<string, string> = {};
-
-      if (
-        Number.isNaN(Number(values.inputAmount)) ||
-        Number(values.inputAmount) <= 0
-      ) {
-        errors = { ...errors, inputAmount: "Please enter a valid amount" };
-      }
-
-      if (values.sourceChain === values.targetChain) {
-        errors = {
-          ...errors,
-          targetChain: "Only cross-chain swaps are supported in this form",
-        };
-      }
-
-      return errors;
-    },
+    validate: validateForm,
     onSubmit: async (values) => {
       formik.setStatus(null);
       setTransactions([]);
@@ -162,7 +148,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
             onSubmit={formik.isSubmitting ? undefined : formik.handleSubmit}
           >
             <Row>
-              <FormControl sx={{ m: 1, minWidth: 120 }} size="small">
+              <FormControl sx={selectFormControlStyles} size="small">
                 <InputLabel id="sourceChainLabel">Source Chain</InputLabel>
                 <Select
                   labelId="sourceChainLabel"
@@ -187,7 +173,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 </Select>
               </FormControl>
 
-              <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
+              <FormControl sx={selectFormControlStyles} size="small">
                 <InputLabel id="sourceTokenProjectId">Source Token</InputLabel>
                 <Select
                   name="sourceTokenProjectId"
@@ -206,7 +192,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 </Select>
               </FormControl>
 
-              <FormControl sx={{ m: 1, maxWidth: 144 }} size="small">
+              <FormControl sx={textInputFormControlStyles} size="small">
                 <TextField
                   name="inputAmount"
                   label="Input Amount"
@@ -224,20 +210,14 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
               </FormControl>
             </Row>
             <Row>
-              <BalanceComponent label="Gas balance" query={sourceGasBalance} />
-              <BalanceComponent
-                label="Token balance"
-                query={sourceTokenBalance}
-              />
+              <BalanceQuery label="Gas balance" query={sourceGasBalance} />
+              <BalanceQuery label="Token balance" query={sourceTokenBalance} />
             </Row>
 
             <Divider />
 
             <Row>
-              <FormControl
-                sx={{ m: 1, minWidth: 120, maxWidth: 120 }}
-                size="small"
-              >
+              <FormControl sx={selectFormControlStyles} size="small">
                 <InputLabel id="targetChainLabel">Target Chain</InputLabel>
                 <Select
                   labelId="targetChainLabel"
@@ -269,7 +249,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                   </FormHelperText>
                 )}
               </FormControl>
-              <FormControl sx={{ m: 1, minWidth: 140 }} size="small">
+              <FormControl sx={selectFormControlStyles} size="small">
                 <InputLabel id="targetTokenProjectId">Target Token</InputLabel>
                 <Select
                   name="targetTokenProjectId"
@@ -289,11 +269,8 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
               </FormControl>
             </Row>
             <Row>
-              <BalanceComponent label="Gas balance" query={targetGasBalance} />
-              <BalanceComponent
-                label="Token balance"
-                query={targetTokenBalance}
-              />
+              <BalanceQuery label="Gas balance" query={targetGasBalance} />
+              <BalanceQuery label="Token balance" query={targetTokenBalance} />
             </Row>
 
             <Divider />
@@ -303,7 +280,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
             </Typography>
 
             <Row>
-              <FormControl sx={{ maxWidth: 145 }}>
+              <FormControl sx={textInputFormControlStyles}>
                 <TextField
                   name="maxPropellerFee"
                   label="Max Propeller Fee"
@@ -363,65 +340,37 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
 
 const Row = styled(Box)`
   margin: 20px 0;
-`;
 
-const BalanceComponent = ({
-  label,
-  query,
-}: {
-  readonly label: string;
-  readonly query: UseQueryResult<string | null, Error>;
-}) => {
-  let content = null;
+  & > .MuiFormControl-root {
+    margin-right: 20px;
 
-  switch (query.status) {
-    case "error": {
-      content = (
-        <Typography component="span" color="red" variant="body2">
-          {query.error.message}
-        </Typography>
-      );
-      break;
-    }
-    case "loading": {
-      content = <CircularProgress size={15} sx={{ ml: 1 }} />;
-      break;
-    }
-    case "success": {
-      content = query.data || "—";
+    &:last-child {
+      margin-right: 0;
     }
   }
+`;
 
-  return (
-    <Typography variant="body2">
-      {label}: {content}
-    </Typography>
-  );
-};
+function validateForm(
+  values: SwapFormikState,
+): Partial<Record<keyof SwapFormikState, string>> {
+  let errors = {};
 
-interface TransactionsProps {
-  readonly transactions: readonly TxRecord[];
+  if (
+    Number.isNaN(Number(values.inputAmount)) ||
+    Number(values.inputAmount) <= 0
+  ) {
+    errors = { ...errors, inputAmount: "Please enter a valid amount" };
+  }
+
+  if (values.sourceChain === values.targetChain) {
+    errors = {
+      ...errors,
+      targetChain: "Only cross-chain swaps are supported in this form",
+    };
+  }
+
+  return errors;
 }
 
-const Transactions: FC<TransactionsProps> = ({ transactions }) => {
-  return (
-    <TableContainer component={Paper} sx={{ mt: 2, mb: 4 }}>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableCell>Chain</TableCell>
-            <TableCell>TxId</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {transactions.map((tx) => (
-            <TableRow key={tx.txId}>
-              <TableCell>{CHAIN_ID_TO_NAME[tx.chain]}</TableCell>
-              <TableCell>{tx.txId}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
-  );
-};
+const selectFormControlStyles = { width: 120 };
+const textInputFormControlStyles = { width: 144 };

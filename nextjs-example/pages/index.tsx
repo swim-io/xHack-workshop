@@ -36,7 +36,7 @@ const Home: NextPage = () => {
         direction="column"
         sx={{ marginTop: "5vh" }}
       >
-        <Box sx={{ width: "100%", maxWidth: 500 }}>
+        <Box sx={{ width: "100%", maxWidth: 457 }}>
           <Typography paragraph color="background.paper" sx={{ m: 3 }}>
             Swap form powered by{" "}
             <Link href="https://swim.io" target="swim" color="background.paper">
