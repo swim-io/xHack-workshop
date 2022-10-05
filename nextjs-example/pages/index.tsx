@@ -12,7 +12,7 @@ const Home: NextPage = () => {
   return (
     <>
       <Head>
-        <title>Swim SDK cross chain swap</title>
+        <title>Swim SDK cross-chain swap</title>
         <style>
           {`body {
               min-height: calc(100vh - 5vh);
