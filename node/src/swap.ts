@@ -3,23 +3,29 @@ import crypto from "crypto";
 import { CHAINS, parseSequenceFromLogEth } from "@certusone/wormhole-sdk";
 import type { ChainConfig } from "@swim-io/core";
 import { Env, getTokenDetails } from "@swim-io/core";
-import { bnb, ethereum } from "@swim-io/evm";
+import { avalanche, bnb, ethereum, fantom, polygon } from "@swim-io/evm";
 import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
 import { TOKEN_PROJECTS_BY_ID, TokenProjectId } from "@swim-io/token-projects";
 import type { Event, Overrides } from "ethers";
 import { Wallet, providers, utils } from "ethers";
 
-type SupportedChains = "bsc" | "ethereum";
+type SupportedChains = "avalanche" | "bsc" | "ethereum" | "fantom" | "polygon";
 type Chain = typeof CHAINS[SupportedChains];
 
 const RPC_URLS: Record<Chain, string | undefined> = {
+  [CHAINS.avalanche]: process.env.AVALANCHE_RPC,
   [CHAINS.bsc]: process.env.BNB_RPC,
   [CHAINS.ethereum]: process.env.ETHEREUM_RPC,
+  [CHAINS.fantom]: process.env.FANTOM_RPC,
+  [CHAINS.polygon]: process.env.POLYGON_RPC,
 };
 
 const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
+  [CHAINS.avalanche]: avalanche.chains[Env.Testnet],
   [CHAINS.bsc]: bnb.chains[Env.Testnet],
   [CHAINS.ethereum]: ethereum.chains[Env.Testnet],
+  [CHAINS.fantom]: fantom.chains[Env.Testnet],
+  [CHAINS.polygon]: polygon.chains[Env.Testnet],
 };
 
 const EVM_BYTES_LOG_LENGTH = 32;
@@ -29,15 +35,14 @@ const WORMHOLE_ADDRESS_LENGTH = 32;
 const bufferToBytesFilter = (buffer: Buffer): Buffer =>
   Buffer.concat([buffer, Buffer.alloc(EVM_BYTES_LOG_LENGTH - buffer.length)]);
 
-const logEvent =
-  (chain: "source" | "target") => (log: string, event: Event) => {
-    console.table({
-      label: `Propeller tx detected on ${chain} chain`,
-      memo: log.replace(/^0x/, ""),
-      tx: event.transactionHash,
-      block: event.blockHash,
-    });
-  };
+const logEvent = (chain: "source" | "target", log: string, event: Event) => {
+  console.table({
+    label: `Propeller tx detected on ${chain} chain`,
+    memo: log.replace(/^0x/, ""),
+    tx: event.transactionHash,
+    block: event.blockHash,
+  });
+};
 
 const createProvider = (chain: Chain): providers.JsonRpcProvider => {
   const rpc = RPC_URLS[chain];
@@ -48,7 +53,7 @@ const createProvider = (chain: Chain): providers.JsonRpcProvider => {
   return new providers.JsonRpcProvider(rpc);
 };
 
-interface SwapArgs {
+interface SwapParameters {
   readonly mnemonic: string;
   readonly hdPath: string;
   readonly sourceChain: Chain;
@@ -57,27 +62,36 @@ interface SwapArgs {
   readonly targetTokenProjectId: TokenProjectId;
   /** In human units */
   readonly inputAmount: string;
-  readonly gasKickStart: boolean;
   /** In human units */
   readonly maxPropellerFee: string;
+  /** Coming soon! */
+  readonly gasKickStart?: boolean;
   readonly overrides?: Overrides;
 }
 
-const swap = async ({
-  mnemonic,
-  hdPath,
-  sourceChain,
-  sourceTokenProjectId,
-  targetChain,
-  targetTokenProjectId,
-  inputAmount,
-  gasKickStart,
-  maxPropellerFee,
-  overrides = {},
-}: SwapArgs): Promise<void> => {
-  const { tokenNumber: targetTokenNumber } =
-    TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
-  if (targetTokenNumber === null) {
+const runSwap = async (
+  {
+    mnemonic,
+    hdPath,
+    sourceChain,
+    sourceTokenProjectId,
+    targetChain,
+    targetTokenProjectId,
+    inputAmount,
+    maxPropellerFee,
+    gasKickStart = false,
+    overrides = {},
+  }: SwapParameters,
+  callback?: () => any,
+): Promise<void> => {
+  const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
+  const targetChainConfig = CHAIN_CONFIGS[targetChain];
+  const sourceTokenProject = TOKEN_PROJECTS_BY_ID[sourceTokenProjectId];
+  const targetTokenProject = TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
+  console.info(
+    `${sourceChainConfig.name} ${sourceTokenProject.symbol} -> ${targetChainConfig.name} ${targetTokenProject.symbol}`,
+  );
+  if (targetTokenProject.tokenNumber === null) {
     throw new Error("Invalid target token");
   }
 
@@ -88,15 +102,12 @@ const swap = async ({
   const targetProvider = createProvider(targetChain);
   const sourceWallet = new Wallet(account, sourceProvider);
 
-  const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
-  const targetChainConfig = CHAIN_CONFIGS[targetChain];
-
   const sourceRoutingContract = Routing__factory.connect(
     sourceChainConfig.routingContractAddress,
     sourceWallet,
   );
   const targetRoutingContract = Routing__factory.connect(
-    CHAIN_CONFIGS[targetChain].routingContractAddress,
+    targetChainConfig.routingContractAddress,
     targetProvider,
   );
 
@@ -171,12 +182,12 @@ const swap = async ({
   const sourceFilter = sourceRoutingContract.filters.MemoInteraction(
     bufferToBytesFilter(memo),
   );
-  sourceRoutingContract.once(sourceFilter, logEvent("source"));
+  sourceRoutingContract.once(sourceFilter, logEvent.bind(null, "source"));
   const targetFilter = targetRoutingContract.filters.MemoInteraction(
     bufferToBytesFilter(memo),
   );
-  targetRoutingContract.once(targetFilter, () => {
-    logEvent("target");
+  targetRoutingContract.once(targetFilter, (log, event) => {
+    logEvent("target", log, event);
     getBalances()
       .then((finalBalances) => {
         console.table({
@@ -185,6 +196,7 @@ const swap = async ({
         });
       })
       .catch(console.error);
+    callback?.();
   });
 
   console.table({
@@ -195,7 +207,7 @@ const swap = async ({
     targetOwner,
     gasKickStart,
     maxPropellerFee: maxPropellerFeeAtomic.toString(),
-    targetTokenNumber,
+    targetTokenNumber: targetTokenProject.tokenNumber,
     memo: memo.toString("hex"),
   });
   const kickOffResponse = await sourceRoutingContract[
@@ -207,7 +219,7 @@ const swap = async ({
     targetOwner,
     gasKickStart,
     maxPropellerFeeAtomic,
-    targetTokenNumber,
+    targetTokenProject.tokenNumber,
     memo,
     overrides,
   );
@@ -223,6 +235,11 @@ const swap = async ({
   console.info(`Wormhole sequence: ${sequence}`);
 };
 
+const swap = async (params: SwapParameters): Promise<void> =>
+  new Promise((resolve, reject) => {
+    runSwap(params, resolve).catch(reject);
+  });
+
 const main = async (): Promise<void> => {
   const { HD_PATH, MNEMONIC } = process.env;
   if (!HD_PATH) {
@@ -234,7 +251,6 @@ const main = async (): Promise<void> => {
     process.exit(1);
   }
 
-  console.info("BNB USDT -> ETH USDC");
   await swap({
     mnemonic: MNEMONIC,
     hdPath: HD_PATH,
@@ -243,25 +259,55 @@ const main = async (): Promise<void> => {
     targetChain: CHAINS.ethereum,
     targetTokenProjectId: TokenProjectId.Usdc,
     inputAmount: "1.23",
-    gasKickStart: false,
     maxPropellerFee: "5.1",
   });
 
-  // console.info("ETH USDC -> BNB USDT");
+  await swap({
+    mnemonic: MNEMONIC,
+    hdPath: HD_PATH,
+    sourceChain: CHAINS.ethereum,
+    sourceTokenProjectId: TokenProjectId.Usdc,
+    targetChain: CHAINS.bsc,
+    targetTokenProjectId: TokenProjectId.Usdt,
+    inputAmount: "1.23",
+    maxPropellerFee: "5.1",
+    overrides: {
+      gasLimit: "500000",
+      gasPrice: "200000000000",
+    },
+  });
+
+  await swap({
+    mnemonic: MNEMONIC,
+    hdPath: HD_PATH,
+    sourceChain: CHAINS.avalanche,
+    sourceTokenProjectId: TokenProjectId.Usdt,
+    targetChain: CHAINS.polygon,
+    targetTokenProjectId: TokenProjectId.Usdc,
+    inputAmount: "1.23",
+    maxPropellerFee: "5.1",
+  });
+
+  await swap({
+    mnemonic: MNEMONIC,
+    hdPath: HD_PATH,
+    sourceChain: CHAINS.polygon,
+    sourceTokenProjectId: TokenProjectId.Usdc,
+    targetChain: CHAINS.avalanche,
+    targetTokenProjectId: TokenProjectId.Usdt,
+    inputAmount: "1.23",
+    maxPropellerFee: "5.1",
+  });
+
   // await swap({
   //   mnemonic: MNEMONIC,
   //   hdPath: HD_PATH,
-  //   sourceChain: CHAINS.ethereum,
+  //   sourceChain: CHAINS.fantom,
   //   sourceTokenProjectId: TokenProjectId.Usdc,
-  //   targetChain: CHAINS.bsc,
+  //   targetChain: CHAINS.avalanche,
   //   targetTokenProjectId: TokenProjectId.Usdt,
   //   inputAmount: "1.23",
-  //   gasKickStart: false,
   //   maxPropellerFee: "5.1",
-  //   overrides: {
-  //     gasLimit: "500000",
-  //     gasPrice: "200000000000",
-  //   },
   // });
 };
 
