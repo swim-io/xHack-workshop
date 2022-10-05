@@ -284,11 +284,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
 
       {transactions.length > 0 && <Transactions transactions={transactions} />}
 
-      <Snackbar
-        open={isSuccessAlertOpen}
-        autoHideDuration={6000}
-        onClose={handleCloseSuccessAlert}
-      >
+      <Snackbar open={isSuccessAlertOpen} onClose={handleCloseSuccessAlert}>
         <Alert onClose={handleCloseSuccessAlert} severity="success">
           Your swap has been completed!
         </Alert>
