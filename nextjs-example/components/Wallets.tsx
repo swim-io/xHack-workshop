@@ -8,7 +8,7 @@ export const Wallets: FC = () => {
   const wallet = useEvmWallet();
   const hasSwapInProgress = useHasSwapInProgress();
 
-  const evmAction = wallet.address
+  const walletAction = wallet.address
     ? () => void wallet.adapter.disconnect()
     : () => void wallet.adapter.connect();
 
@@ -17,7 +17,7 @@ export const Wallets: FC = () => {
       <CardContent>
         <Button
           variant="outlined"
-          onClick={evmAction}
+          onClick={walletAction}
           fullWidth
           disabled={hasSwapInProgress}
         >
