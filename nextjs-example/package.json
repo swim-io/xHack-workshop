@@ -30,6 +30,7 @@
     "react-dom": "18.2.0"
   },
   "devDependencies": {
+    "@swim-io/eslint-config": "^0.34.0",
     "@swim-io/tsconfig": "^0.34.0",
     "@types/node": "18.8.1",
     "@types/react": "18.0.21",
