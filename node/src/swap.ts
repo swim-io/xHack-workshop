@@ -69,27 +69,25 @@ interface SwapParameters {
   readonly overrides?: Overrides;
 }
 
-const runSwap = async (
-  {
-    mnemonic,
-    hdPath,
-    sourceChain,
-    sourceTokenProjectId,
-    targetChain,
-    targetTokenProjectId,
-    inputAmount,
-    maxPropellerFee,
-    gasKickStart = false,
-    overrides = {},
-  }: SwapParameters,
-  callback?: () => any,
-): Promise<void> => {
+const swap = async ({
+  mnemonic,
+  hdPath,
+  sourceChain,
+  sourceTokenProjectId,
+  targetChain,
+  targetTokenProjectId,
+  inputAmount,
+  maxPropellerFee,
+  gasKickStart = false,
+  overrides = {},
+}: SwapParameters): Promise<void> => {
   const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
   const targetChainConfig = CHAIN_CONFIGS[targetChain];
   const sourceTokenProject = TOKEN_PROJECTS_BY_ID[sourceTokenProjectId];
   const targetTokenProject = TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
+  console.info("=".repeat(process.stdout.columns));
   console.info(
-    `${sourceChainConfig.name} ${sourceTokenProject.symbol} -> ${targetChainConfig.name} ${targetTokenProject.symbol}`,
+    `* ${sourceChainConfig.name} ${sourceTokenProject.symbol} -> ${targetChainConfig.name} ${targetTokenProject.symbol}`,
   );
   if (targetTokenProject.tokenNumber === null) {
     throw new Error("Invalid target token");
@@ -186,17 +184,18 @@ const runSwap = async (
   const targetFilter = targetRoutingContract.filters.MemoInteraction(
     bufferToBytesFilter(memo),
   );
-  targetRoutingContract.once(targetFilter, (log, event) => {
-    logEvent("target", log, event);
-    getBalances()
-      .then((finalBalances) => {
-        console.table({
-          label: "Final balances",
-          ...finalBalances,
-        });
-      })
-      .catch(console.error);
-    callback?.();
+  const promiseToReturn = new Promise<void>((resolve, reject) => {
+    targetRoutingContract.once(targetFilter, (log, event) => {
+      logEvent("target", log, event);
+      getBalances()
+        .then((finalBalances) => {
+          console.table({
+            label: "Final balances",
+            ...finalBalances,
+          });
+        })
+        .then(resolve, reject);
+    });
   });
 
   console.table({
@@ -233,12 +232,9 @@ const runSwap = async (
     sourceChainConfig.wormhole.bridge,
   );
   console.info(`Wormhole sequence: ${sequence}`);
-};
 
-const swap = async (params: SwapParameters): Promise<void> =>
-  new Promise((resolve, reject) => {
-    runSwap(params, resolve).catch(reject);
-  });
+  return promiseToReturn;
+};
 
 const main = async (): Promise<void> => {
   const { HD_PATH, MNEMONIC } = process.env;
