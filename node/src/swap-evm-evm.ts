@@ -238,19 +238,19 @@ const swap = async ({
 };
 
 const main = async (): Promise<void> => {
-  const { HD_PATH, MNEMONIC } = process.env;
-  if (!HD_PATH) {
-    console.error("Please set HD_PATH");
+  const { EVM_HD_PATH, EVM_MNEMONIC } = process.env;
+  if (!EVM_HD_PATH) {
+    console.error("Please set EVM_HD_PATH");
     process.exit(1);
   }
-  if (!MNEMONIC) {
-    console.error("Please set MNEMONIC");
+  if (!EVM_MNEMONIC) {
+    console.error("Please set EVM_MNEMONIC");
     process.exit(1);
   }
 
   await swap({
-    mnemonic: MNEMONIC,
-    hdPath: HD_PATH,
+    mnemonic: EVM_MNEMONIC,
+    hdPath: EVM_HD_PATH,
     sourceChain: CHAINS.bsc,
     sourceTokenProjectId: TokenProjectId.Usdt,
     targetChain: CHAINS.ethereum,
@@ -260,8 +260,8 @@ const main = async (): Promise<void> => {
   });
 
   await swap({
-    mnemonic: MNEMONIC,
-    hdPath: HD_PATH,
+    mnemonic: EVM_MNEMONIC,
+    hdPath: EVM_HD_PATH,
     sourceChain: CHAINS.ethereum,
     sourceTokenProjectId: TokenProjectId.Usdc,
     targetChain: CHAINS.bsc,
@@ -275,8 +275,8 @@ const main = async (): Promise<void> => {
   });
 
   await swap({
-    mnemonic: MNEMONIC,
-    hdPath: HD_PATH,
+    mnemonic: EVM_MNEMONIC,
+    hdPath: EVM_HD_PATH,
     sourceChain: CHAINS.avalanche,
     sourceTokenProjectId: TokenProjectId.Usdt,
     targetChain: CHAINS.polygon,
@@ -286,8 +286,8 @@ const main = async (): Promise<void> => {
   });
 
   await swap({
-    mnemonic: MNEMONIC,
-    hdPath: HD_PATH,
+    mnemonic: EVM_MNEMONIC,
+    hdPath: EVM_HD_PATH,
     sourceChain: CHAINS.polygon,
     sourceTokenProjectId: TokenProjectId.Usdc,
     targetChain: CHAINS.avalanche,
