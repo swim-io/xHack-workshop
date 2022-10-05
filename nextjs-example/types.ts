@@ -20,7 +20,7 @@ export const isStablecoin = (
     tokenProject.tokenNumber !== null
   );
 };
-export interface SwapArgs {
+export interface SwapParameters {
   readonly sourceChain: Chain;
   readonly sourceTokenProjectId: TokenProjectId;
   readonly targetChain: Chain;

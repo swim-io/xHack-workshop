@@ -4,7 +4,7 @@ import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
 import { TOKEN_PROJECTS_BY_ID } from "@swim-io/token-projects";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { utils } from "ethers";
-import { useContext, useRef } from "react";
+import { useContext } from "react";
 
 import {
   CHAIN_CONFIGS,
@@ -12,7 +12,7 @@ import {
   WORMHOLE_ADDRESS_LENGTH,
 } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import type { SwapArgs, TxRecord } from "../types";
+import type { SwapParameters, TxRecord } from "../types";
 import { bufferToBytesFilter, generateId, handleEvent } from "../utils";
 
 import { useEvmWallet } from "./useEvmWallet";
@@ -36,7 +36,7 @@ export const useEvmToEvmSwap = (
       gasKickStart,
       maxPropellerFee,
       overrides = {},
-    }: SwapArgs) => {
+    }: SwapParameters) => {
       const { signer, address } = evmWallet.adapter;
       if (!signer || !address)
         throw new Error(`Please connect your EVM wallet`);

@@ -19,7 +19,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import type { TokenProjectId } from "@swim-io/token-projects";
 import { useFormik } from "formik";
 import type { FC } from "react";
 import { useState } from "react";
@@ -30,23 +29,13 @@ import {
   useEvmToEvmSwap,
   useEvmTokenBalance,
 } from "../hooks";
-import type { ChainName, TxRecord } from "../types";
+import type { Chain, ChainName, SwapParameters, TxRecord } from "../types";
 
 import { BalanceQuery } from "./BalanceQuery";
 import { Transactions } from "./Transactions";
 
 interface SwapFormProps {
   readonly chains: readonly ChainName[];
-}
-
-interface SwapFormikState {
-  readonly sourceChain: ChainName;
-  readonly targetChain: ChainName;
-  readonly sourceTokenProjectId: TokenProjectId;
-  readonly targetTokenProjectId: TokenProjectId;
-  readonly inputAmount: string;
-  readonly gasKickStart: boolean;
-  readonly maxPropellerFee: string;
 }
 
 export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
@@ -62,54 +51,53 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
   // evm to evm swap implementation
   const { mutateAsync: evmToEvmSwap } = useEvmToEvmSwap(onTransactionDetected);
 
-  // display an alert on successful swaps
+  // state for an alert on successful swaps
   const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
+  // state for error message
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const formik = useFormik<SwapFormikState>({
+  const {
+    errors,
+    handleChange,
+    handleSubmit,
+    isSubmitting,
+    setFieldValue,
+    touched,
+    values,
+  } = useFormik<SwapParameters>({
     initialValues: {
-      sourceChain: chains[0],
-      targetChain: chains[1],
-      sourceTokenProjectId: getChainStableCoins(chains[0])[0].id,
-      targetTokenProjectId: getChainStableCoins(chains[1])[0].id,
+      sourceChain: CHAINS[chains[0]],
+      targetChain: CHAINS[chains[1]],
+      sourceTokenProjectId: getChainStableCoins(CHAINS[chains[0]])[0].id,
+      targetTokenProjectId: getChainStableCoins(CHAINS[chains[1]])[0].id,
       inputAmount: "",
       gasKickStart: false,
       maxPropellerFee: "1",
     },
     validate: validateForm,
-    onSubmit: async (values) => {
-      formik.setStatus(null);
+    onSubmit: async (formValues) => {
+      setErrorMessage(null);
       setTransactions([]);
 
       try {
-        await evmToEvmSwap({
-          sourceChain: CHAINS[values.sourceChain],
-          sourceTokenProjectId: values.sourceTokenProjectId,
-          targetChain: CHAINS[values.targetChain],
-          targetTokenProjectId: values.targetTokenProjectId,
-          inputAmount: values.inputAmount,
-          gasKickStart: values.gasKickStart,
-          maxPropellerFee: values.maxPropellerFee,
-        });
-
+        await evmToEvmSwap(formValues);
         setIsSuccessAlertOpen(true);
       } catch (error) {
-        formik.setStatus(
-          error instanceof Error ? error.message : String(error),
-        );
+        setErrorMessage(error instanceof Error ? error.message : String(error));
       }
     },
   });
 
   // Get balances for gas token and selected tokens of each chain
-  const sourceGasBalance = useEvmGasBalance(CHAINS[formik.values.sourceChain]);
-  const targetGasBalance = useEvmGasBalance(CHAINS[formik.values.targetChain]);
+  const sourceGasBalance = useEvmGasBalance(values.sourceChain);
+  const targetGasBalance = useEvmGasBalance(values.targetChain);
   const sourceTokenBalance = useEvmTokenBalance(
-    CHAINS[formik.values.sourceChain],
-    formik.values.sourceTokenProjectId,
+    values.sourceChain,
+    values.sourceTokenProjectId,
   );
   const targetTokenBalance = useEvmTokenBalance(
-    CHAINS[formik.values.targetChain],
-    formik.values.targetTokenProjectId,
+    values.targetChain,
+    values.targetTokenProjectId,
   );
 
   const handleCloseSuccessAlert = () => setIsSuccessAlertOpen(false);
@@ -118,32 +106,31 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
     <>
       <Card sx={{ bgcolor: "background.paper" }}>
         <CardContent>
-          {formik.status && <Alert severity="error">{formik.status}</Alert>}
+          {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
           <Box
             component="form"
             noValidate
             autoComplete="off"
-            onSubmit={formik.isSubmitting ? undefined : formik.handleSubmit}
+            onSubmit={isSubmitting ? undefined : handleSubmit}
           >
             <Row>
               <FormControl sx={selectFormControlStyles} size="small">
                 <InputLabel>Source Chain</InputLabel>
                 <Select
                   name="sourceChain"
-                  value={formik.values.sourceChain}
+                  value={values.sourceChain}
                   label="Source Chain"
                   onChange={(event) => {
-                    void formik.setFieldValue(
+                    void setFieldValue(
                       "sourceTokenProjectId",
-                      getChainStableCoins(event.target.value as ChainName)[0]
-                        .id,
+                      getChainStableCoins(event.target.value as Chain)[0].id,
                     );
-                    formik.handleChange(event);
+                    handleChange(event);
                   }}
-                  disabled={formik.isSubmitting}
+                  disabled={isSubmitting}
                 >
                   {chains.map((chainName) => (
-                    <MenuItem key={chainName} value={chainName}>
+                    <MenuItem key={chainName} value={CHAINS[chainName]}>
                       {chainName}
                     </MenuItem>
                   ))}
@@ -154,12 +141,12 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 <InputLabel>Source Token</InputLabel>
                 <Select
                   name="sourceTokenProjectId"
-                  value={formik.values.sourceTokenProjectId}
+                  value={values.sourceTokenProjectId}
                   label="Source Token"
-                  onChange={formik.handleChange}
-                  disabled={formik.isSubmitting}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
                 >
-                  {getChainStableCoins(formik.values.sourceChain).map(
+                  {getChainStableCoins(values.sourceChain).map(
                     (tokenProject) => (
                       <MenuItem key={tokenProject.id} value={tokenProject.id}>
                         {tokenProject.symbol}
@@ -173,19 +160,16 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 <TextField
                   name="inputAmount"
                   label="Input Amount"
-                  value={formik.values.inputAmount}
-                  onChange={formik.handleChange}
-                  disabled={formik.isSubmitting}
+                  value={values.inputAmount}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
                   size="small"
-                  error={
-                    formik.touched.inputAmount && !!formik.errors.inputAmount
-                  }
-                  helperText={
-                    formik.touched.inputAmount && formik.errors.inputAmount
-                  }
+                  error={touched.inputAmount && !!errors.inputAmount}
+                  helperText={touched.inputAmount && errors.inputAmount}
                 />
               </FormControl>
             </Row>
+
             <Row>
               <BalanceQuery label="Gas balance" query={sourceGasBalance} />
               <BalanceQuery label="Token balance" query={sourceTokenBalance} />
@@ -198,43 +182,39 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 <InputLabel>Target Chain</InputLabel>
                 <Select
                   name="targetChain"
-                  value={formik.values.targetChain}
+                  value={values.targetChain}
                   label="Target Chain"
                   onChange={(event) => {
-                    void formik.setFieldValue(
+                    void setFieldValue(
                       "targetTokenProjectId",
-                      getChainStableCoins(event.target.value as ChainName)[0]
-                        .id,
+                      getChainStableCoins(event.target.value as Chain)[0].id,
                     );
-                    formik.handleChange(event);
+                    handleChange(event);
                   }}
-                  disabled={formik.isSubmitting}
-                  error={
-                    formik.touched.targetChain && !!formik.errors.targetChain
-                  }
+                  disabled={isSubmitting}
+                  error={touched.targetChain && !!errors.targetChain}
                 >
                   {chains.map((chainName) => (
-                    <MenuItem key={chainName} value={chainName}>
+                    <MenuItem key={chainName} value={CHAINS[chainName]}>
                       {chainName}
                     </MenuItem>
                   ))}
                 </Select>
-                {formik.touched.targetChain && !!formik.errors.targetChain && (
-                  <FormHelperText error>
-                    {formik.errors.targetChain}
-                  </FormHelperText>
+                {touched.targetChain && !!errors.targetChain && (
+                  <FormHelperText error>{errors.targetChain}</FormHelperText>
                 )}
               </FormControl>
+
               <FormControl sx={selectFormControlStyles} size="small">
                 <InputLabel>Target Token</InputLabel>
                 <Select
                   name="targetTokenProjectId"
-                  value={formik.values.targetTokenProjectId}
+                  value={values.targetTokenProjectId}
                   label="Target Token"
-                  onChange={formik.handleChange}
-                  disabled={formik.isSubmitting}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
                 >
-                  {getChainStableCoins(formik.values.targetChain).map(
+                  {getChainStableCoins(values.targetChain).map(
                     (tokenProject) => (
                       <MenuItem key={tokenProject.id} value={tokenProject.id}>
                         {tokenProject.symbol}
@@ -244,6 +224,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 </Select>
               </FormControl>
             </Row>
+
             <Row>
               <BalanceQuery label="Gas balance" query={targetGasBalance} />
               <BalanceQuery label="Token balance" query={targetTokenBalance} />
@@ -260,12 +241,13 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 <TextField
                   name="maxPropellerFee"
                   label="Max Propeller Fee"
-                  value={formik.values.maxPropellerFee}
-                  onChange={formik.handleChange}
-                  disabled={formik.isSubmitting}
+                  value={values.maxPropellerFee}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
                   size="small"
                 />
               </FormControl>
+
               <FormControl>
                 <Tooltip
                   placement="top-start"
@@ -275,8 +257,8 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                     control={
                       <Checkbox
                         name="gasKickStart"
-                        checked={formik.values.gasKickStart}
-                        onChange={formik.handleChange}
+                        checked={values.gasKickStart}
+                        onChange={handleChange}
                         disabled
                       />
                     }
@@ -285,11 +267,12 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 </Tooltip>
               </FormControl>
             </Row>
+
             <CardActions>
               <LoadingButton
                 type="submit"
                 variant="contained"
-                loading={formik.isSubmitting}
+                loading={isSubmitting}
                 fullWidth
               >
                 Swap
@@ -333,8 +316,8 @@ const Row = styled(Box)`
 `;
 
 function validateForm(
-  values: SwapFormikState,
-): Partial<Record<keyof SwapFormikState, string>> {
+  values: SwapParameters,
+): Partial<Record<keyof SwapParameters, string>> {
   let errors = {};
 
   if (

@@ -22,10 +22,10 @@ export const CHAIN_GAS_TOKEN: Record<Chain, GasToken> = {
 };
 
 export const getChainStableCoins = (
-  chainName: ChainName,
+  chain: Chain,
 ): readonly StableCoinTokenProject[] => {
   return sortBy(
-    CHAIN_CONFIGS[CHAINS[chainName]].tokens
+    CHAIN_CONFIGS[chain].tokens
       .map((token) => TOKEN_PROJECTS_BY_ID[token.projectId])
       .filter(isStablecoin),
     "symbol",
