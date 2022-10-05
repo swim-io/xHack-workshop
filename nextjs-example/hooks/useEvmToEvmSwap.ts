@@ -38,6 +38,13 @@ export const useEvmToEvmSwap = (
       if (!signer || !address)
         throw new Error(`Please connect your EVM wallet`);
 
+      const { tokenNumber: targetTokenNumber } =
+        TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
+
+      if (targetTokenNumber === null) {
+        throw new Error("Invalid target token");
+      }
+
       await evmWallet.adapter.switchNetwork(CHAIN_CONFIGS[sourceChain].chainId);
 
       const pendingTransactions = sourceChain === targetChain ? 1 : 2;
@@ -97,13 +104,6 @@ export const useEvmToEvmSwap = (
           pendingTransactionsCount.current--; // eslint-disable-line functional/immutable-data
         }),
       );
-
-      const { tokenNumber: targetTokenNumber } =
-        TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
-
-      if (targetTokenNumber === null) {
-        throw new Error("Invalid target token");
-      }
 
       console.info("Sending propeller kick-off tx...");
       console.table({
