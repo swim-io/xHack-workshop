@@ -106,10 +106,6 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
             values.maxPropellerFee,
             sourceGasToken.decimals,
           ),
-          overrides: {
-            gasLimit: "500000",
-            gasPrice: "200000000000",
-          },
         });
 
         setIsSuccessAlertOpen(true);

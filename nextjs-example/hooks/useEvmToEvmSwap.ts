@@ -32,7 +32,7 @@ export const useEvmToEvmSwap = (
       inputAmount,
       gasKickStart,
       maxPropellerFee,
-      overrides,
+      overrides = {},
     }: SwapArgs) => {
       const { signer, address } = evmWallet.adapter;
       if (!signer || !address)
