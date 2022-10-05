@@ -299,11 +299,11 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
             <Divider />
 
             <Typography paragraph gutterBottom sx={{ mt: 2 }}>
-              Propeller (relayer) options
+              Propeller options
             </Typography>
 
-            <Row display="flex" justifyContent="space-evenly">
-              <FormControl>
+            <Row>
+              <FormControl sx={{ maxWidth: 145 }}>
                 <TextField
                   name="maxPropellerFee"
                   label="Max Propeller Fee"
@@ -314,14 +314,17 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 />
               </FormControl>
               <FormControl>
-                <Tooltip title="Enable to swap some gas token on the target chain">
+                <Tooltip
+                  placement="top"
+                  title="Enable to receive some gas tokens on the target chain (coming soon)"
+                >
                   <FormControlLabel
                     control={
                       <Checkbox
                         name="gasKickStart"
                         checked={formik.values.gasKickStart}
                         onChange={formik.handleChange}
-                        disabled={formik.isSubmitting}
+                        disabled
                       />
                     }
                     label="Gas kickstart"
