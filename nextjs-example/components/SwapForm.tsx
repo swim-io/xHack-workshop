@@ -42,9 +42,9 @@ import type { ChainName, TxRecord } from "../types";
 import { BalanceQuery } from "./BalanceQuery";
 import { Transactions } from "./Transactions";
 
-type SwapFormProps = {
+interface SwapFormProps {
   readonly chains: readonly ChainName[];
-};
+}
 
 interface SwapFormikState {
   readonly sourceChain: ChainName;
