@@ -18,7 +18,7 @@
   },
   "scripts": {
     "get-vaa": "ts-node -r dotenv/config src/get-vaa.ts",
-    "swap": "ts-node -r dotenv/config src/swap.ts",
+    "swap-evm-evm": "ts-node -r dotenv/config src/swap-evm-evm.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
