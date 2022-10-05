@@ -81,6 +81,9 @@ const swap = async ({
   gasKickStart = false,
   overrides = {},
 }: SwapParameters): Promise<void> => {
+  if (sourceChain === targetChain) {
+    throw new Error("Invalid target chain");
+  }
   const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
   const targetChainConfig = CHAIN_CONFIGS[targetChain];
   const sourceTokenProject = TOKEN_PROJECTS_BY_ID[sourceTokenProjectId];
