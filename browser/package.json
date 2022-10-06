@@ -19,6 +19,7 @@
     "@mui/material": "^5.10.8",
     "@swim-io/core": "^0.34.0",
     "@swim-io/evm": "^0.34.0",
+    "@swim-io/solana": "^0.35.0",
     "@swim-io/token-projects": "^0.34.0",
     "@swim-io/utils": "^0.34.0",
     "@tanstack/react-query": "^4.9.0",

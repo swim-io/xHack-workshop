@@ -9,6 +9,7 @@ import { useState } from "react";
 
 import { EvmWalletProvider } from "../contexts/EvmWalletProvider";
 import { GetEvmConnectionProvider } from "../contexts/GetEvmProvider";
+import { SolanaWalletProvider } from "../contexts/SolanaWalletProvider";
 
 function MyApp({ Component, pageProps }: AppProps) {
   const [queryClient] = useState(() => new QueryClient());
@@ -16,9 +17,11 @@ function MyApp({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <EvmWalletProvider>
-        <GetEvmConnectionProvider>
-          <Component {...pageProps} />
-        </GetEvmConnectionProvider>
+        <SolanaWalletProvider>
+          <GetEvmConnectionProvider>
+            <Component {...pageProps} />
+          </GetEvmConnectionProvider>
+        </SolanaWalletProvider>
       </EvmWalletProvider>
     </QueryClientProvider>
   );
