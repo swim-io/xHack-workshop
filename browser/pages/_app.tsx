@@ -9,6 +9,7 @@ import { useState } from "react";
 
 import { EvmWalletProvider } from "../contexts/EvmWalletProvider";
 import { GetEvmConnectionProvider } from "../contexts/GetEvmProvider";
+import { SolanaConnectionProvider } from "../contexts/SolanaProvider";
 import { SolanaWalletProvider } from "../contexts/SolanaWalletProvider";
 
 function MyApp({ Component, pageProps }: AppProps) {
@@ -19,7 +20,9 @@ function MyApp({ Component, pageProps }: AppProps) {
       <EvmWalletProvider>
         <SolanaWalletProvider>
           <GetEvmConnectionProvider>
-            <Component {...pageProps} />
+            <SolanaConnectionProvider>
+              <Component {...pageProps} />
+            </SolanaConnectionProvider>
           </GetEvmConnectionProvider>
         </SolanaWalletProvider>
       </EvmWalletProvider>
