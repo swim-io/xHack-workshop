@@ -9,7 +9,6 @@ const RPC_URLS: Record<Chain, string | undefined> = {
   [CHAINS.avalanche]: process.env.NEXT_PUBLIC_AVALANCHE_RPC,
   [CHAINS.bsc]: process.env.NEXT_PUBLIC_BNB_RPC,
   [CHAINS.ethereum]: process.env.NEXT_PUBLIC_ETHEREUM_RPC,
-  [CHAINS.fantom]: process.env.NEXT_PUBLIC_FANTOM_RPC,
   [CHAINS.polygon]: process.env.NEXT_PUBLIC_POLYGON_RPC,
 };
 
