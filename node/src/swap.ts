@@ -3,20 +3,19 @@ import crypto from "crypto";
 import { CHAINS, parseSequenceFromLogEth } from "@certusone/wormhole-sdk";
 import type { ChainConfig } from "@swim-io/core";
 import { Env, getTokenDetails } from "@swim-io/core";
-import { avalanche, bnb, ethereum, fantom, polygon } from "@swim-io/evm";
+import { avalanche, bnb, ethereum, polygon } from "@swim-io/evm";
 import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
 import { TOKEN_PROJECTS_BY_ID, TokenProjectId } from "@swim-io/token-projects";
 import type { Event, Overrides } from "ethers";
 import { Wallet, providers, utils } from "ethers";
 
-type SupportedChains = "avalanche" | "bsc" | "ethereum" | "fantom" | "polygon";
+type SupportedChains = "avalanche" | "bsc" | "ethereum" | "polygon";
 type Chain = typeof CHAINS[SupportedChains];
 
 const RPC_URLS: Record<Chain, string | undefined> = {
   [CHAINS.avalanche]: process.env.AVALANCHE_RPC,
   [CHAINS.bsc]: process.env.BNB_RPC,
   [CHAINS.ethereum]: process.env.ETHEREUM_RPC,
-  [CHAINS.fantom]: process.env.FANTOM_RPC,
   [CHAINS.polygon]: process.env.POLYGON_RPC,
 };
 
@@ -24,7 +23,6 @@ const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
   [CHAINS.avalanche]: avalanche.chains[Env.Testnet],
   [CHAINS.bsc]: bnb.chains[Env.Testnet],
   [CHAINS.ethereum]: ethereum.chains[Env.Testnet],
-  [CHAINS.fantom]: fantom.chains[Env.Testnet],
   [CHAINS.polygon]: polygon.chains[Env.Testnet],
 };
 
@@ -297,17 +295,6 @@ const main = async (): Promise<void> => {
     inputAmount: "1.23",
     maxPropellerFee: "5.1",
   });
-
-  // await swap({
-  //   mnemonic: MNEMONIC,
-  //   hdPath: HD_PATH,
-  //   sourceChain: CHAINS.fantom,
-  //   sourceTokenProjectId: TokenProjectId.Usdc,
-  //   targetChain: CHAINS.avalanche,
-  //   targetTokenProjectId: TokenProjectId.Usdt,
-  //   inputAmount: "1.23",
-  //   maxPropellerFee: "5.1",
-  // });
 };
 
 main().catch(console.error);
