@@ -8,7 +8,7 @@ import type { ChainConfig } from "@swim-io/core";
 import { Env } from "@swim-io/core";
 import { avalanche, bnb, ethereum, fantom, polygon } from "@swim-io/evm";
 
-type SupportedChains = "avalanche" | "bsc" | "ethereum" | "fantom" | "polygon";
+type SupportedChains = "avalanche" | "bsc" | "ethereum" | "polygon";
 type Chain = typeof CHAINS[SupportedChains];
 
 const CHAINS_BY_NAME: Record<string, Chain | undefined> = {
@@ -22,7 +22,6 @@ const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
   [CHAINS.avalanche]: avalanche.chains[Env.Testnet],
   [CHAINS.bsc]: bnb.chains[Env.Testnet],
   [CHAINS.ethereum]: ethereum.chains[Env.Testnet],
-  [CHAINS.fantom]: fantom.chains[Env.Testnet],
   [CHAINS.polygon]: polygon.chains[Env.Testnet],
 };
 
