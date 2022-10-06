@@ -24,5 +24,5 @@ export const handleEvent =
       tx: event.transactionHash,
       block: event.blockHash,
     });
-    callback && callback({ txId: event.transactionHash, chain: chainId });
+    callback?.({ txId: event.transactionHash, chain: chainId });
   };
