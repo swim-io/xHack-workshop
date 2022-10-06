@@ -2,7 +2,13 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-First, run the development server:
+First, create an `.env.local` file with your environment variables for PRC providers. See [.env.local.example](./.env.local.example) for the configuration options. You can also copy the example, it should work fine.
+
+```bash
+cp .env.local.example .env.local
+```
+
+Then, run the development server:
 
 ```bash
 npm run dev
@@ -10,11 +16,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+First, build and export your app
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+```bash
+npm run build
+npm run export
+```
+
+You will then have a build in your local `out` directory. Upload this directory to your preferred hosting provider.
 
 ## Learn More
 
@@ -30,3 +41,5 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+Alternative hosting providers with friendly services for Single Page Apps include: Cloudflare, netlify, surge.sh
