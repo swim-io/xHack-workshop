@@ -2,7 +2,7 @@ import type { CHAINS } from "@certusone/wormhole-sdk";
 import type { TokenProject, TokenProjectId } from "@swim-io/token-projects";
 import type { Overrides } from "ethers";
 
-export type ChainName = "avalanche" | "bsc" | "ethereum" | "fantom" | "polygon";
+export type ChainName = "avalanche" | "bsc" | "ethereum" | "polygon";
 export type Chain = typeof CHAINS[ChainName];
 
 export interface StableCoinTokenProject extends TokenProject {
