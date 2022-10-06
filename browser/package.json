@@ -1,0 +1,42 @@
+{
+  "name": "nextjs-example",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "export": "next export",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@certusone/wormhole-sdk": "^0.7.0",
+    "@emotion/react": "^11.10.4",
+    "@emotion/styled": "^11.10.4",
+    "@fontsource/roboto": "^4.5.8",
+    "@mui/lab": "^5.0.0-alpha.101",
+    "@mui/material": "^5.10.8",
+    "@swim-io/core": "^0.34.0",
+    "@swim-io/evm": "^0.34.0",
+    "@swim-io/token-projects": "^0.34.0",
+    "@swim-io/utils": "^0.34.0",
+    "@tanstack/react-query": "^4.9.0",
+    "ethers": "^5.7.1",
+    "formik": "^2.2.9",
+    "lodash": "^4.17.21",
+    "next": "12.3.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0"
+  },
+  "devDependencies": {
+    "@swim-io/eslint-config": "^0.34.0",
+    "@swim-io/tsconfig": "^0.34.0",
+    "@types/node": "18.8.1",
+    "@types/react": "18.0.21",
+    "@types/react-dom": "18.0.6",
+    "eslint": "8.24.0",
+    "eslint-config-next": "12.3.1",
+    "typescript": "4.8.4"
+  }
+}
