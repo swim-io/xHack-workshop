@@ -20,6 +20,7 @@
     "get-vaa": "ts-node -r dotenv/config src/get-vaa.ts",
     "swap-evm-evm": "ts-node -r dotenv/config src/swap-evm-evm.ts",
     "swap-evm-solana": "ts-node -r dotenv/config src/swap-evm-solana.ts",
+    "swap-solana-evm": "ts-node -r dotenv/config src/swap-solana-evm.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
