@@ -1,5 +1,5 @@
 import type { Accounts, Wallet } from "@project-serum/anchor";
-import { AnchorProvider, BN, Spl } from "@project-serum/anchor";
+import { AnchorProvider, Spl } from "@project-serum/anchor";
 import {
   TOKEN_PROGRAM_ID,
   getOrCreateAssociatedTokenAccount,
@@ -17,6 +17,7 @@ import {
 import { getTokenDetails } from "@swim-io/core";
 import { TokenProjectId } from "@swim-io/token-projects";
 import * as bip39 from "bip39";
+import BN from "bn.js";
 import { derivePath } from "ed25519-hd-key";
 
 import type { SupportedSolanaToken } from "./config";

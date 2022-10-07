@@ -1,5 +1,5 @@
 import { CHAINS } from "@certusone/wormhole-sdk";
-import { Wallet as AnchorWallet, BN, Program } from "@project-serum/anchor";
+import { Wallet as AnchorWallet, Program } from "@project-serum/anchor";
 import { createMemoInstruction } from "@solana/spl-memo";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { getTokenDetails } from "@swim-io/core";
@@ -8,6 +8,7 @@ import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
 import { parseSequenceFromLogSolana, solana } from "@swim-io/solana";
 import { idl } from "@swim-io/solana-contracts";
 import { TOKEN_PROJECTS_BY_ID, TokenProjectId } from "@swim-io/token-projects";
+import BN from "bn.js";
 import { utils } from "ethers";
 
 import type { EvmChain, SupportedSolanaToken } from "./config";
