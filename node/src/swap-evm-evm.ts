@@ -54,6 +54,7 @@ const swap = async ({
   const targetChainConfig = EVM_CHAIN_CONFIGS[targetChain];
   const sourceTokenProject = TOKEN_PROJECTS_BY_ID[sourceTokenProjectId];
   if (
+    // NOTE: SDK will be updated to handle this case
     sourceTokenProjectId !== TokenProjectId.SwimUsd &&
     sourceTokenProject.tokenNumber === null
   ) {
