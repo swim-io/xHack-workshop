@@ -1,7 +1,12 @@
 import { CHAINS } from "@certusone/wormhole-sdk";
 import { Wallet as AnchorWallet, Program } from "@project-serum/anchor";
 import { createMemoInstruction } from "@solana/spl-memo";
-import { Keypair, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import {
+  ComputeBudgetProgram,
+  Keypair,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+} from "@solana/web3.js";
 import { getTokenDetails } from "@swim-io/core";
 import { evmAddressToWormhole } from "@swim-io/evm";
 import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
@@ -173,7 +178,7 @@ const swap = async ({
   const inputAmountAtomic = utils
     .parseUnits(inputAmount, sourceTokenDetails.decimals)
     .toString();
-  const evmOwner = evmAddressToWormhole(evmKeypair.address);
+  const evmOwner = Buffer.from(evmAddressToWormhole(evmKeypair.address));
   const maxPropellerFeeAtomic = utils.parseUnits(
     maxPropellerFee,
     evmChainConfig.swimUsdDetails.decimals,
@@ -181,6 +186,9 @@ const swap = async ({
   const memo = createMemo();
   // Convert to hex string for convenient extraction from explorers despite the inefficiency
   const memoIx = createMemoInstruction(memo.toString("hex"));
+  const setComputeUnitLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
+    units: 350_000,
+  });
 
   /**
    * STEP 7: If input token is not swimUSD, add to liquidity pool on Solana to get swimUSD
@@ -286,7 +294,7 @@ const swap = async ({
     label: "Propeller transfer tx params",
     swimUsdInputAmountAtomic,
     targetChain,
-    evmOwner: Buffer.from(evmOwner).toString("hex"),
+    evmOwner: evmOwner.toString("hex"),
     gasKickStart,
     maxPropellerFee: maxPropellerFeeAtomic.toString(),
     targetTokenNumber: evmTokenProject.tokenNumber,
@@ -304,7 +312,8 @@ const swap = async ({
       memo,
     )
     .accounts(transferAccounts)
-    // .postInstructions([memoIx])
+    .preInstructions([setComputeUnitLimitIx])
+    .postInstructions([memoIx])
     .signers([auxiliarySigner])
     .rpc();
   console.info(
