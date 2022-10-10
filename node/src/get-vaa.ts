@@ -4,11 +4,13 @@ import {
   getSignedVAAWithRetry,
 } from "@certusone/wormhole-sdk";
 import { NodeHttpTransport } from "@improbable-eng/grpc-web-node-http-transport";
+import { PublicKey } from "@solana/web3.js";
 import type { ChainConfig } from "@swim-io/core";
 import { Env } from "@swim-io/core";
 import { avalanche, bnb, ethereum, polygon } from "@swim-io/evm";
+import { solana } from "@swim-io/solana";
 
-type SupportedChains = "avalanche" | "bsc" | "ethereum" | "polygon";
+type SupportedChains = "avalanche" | "bsc" | "ethereum" | "polygon" | "solana";
 type Chain = typeof CHAINS[SupportedChains];
 
 const CHAINS_BY_NAME: Record<string, Chain | undefined> = {
@@ -16,6 +18,7 @@ const CHAINS_BY_NAME: Record<string, Chain | undefined> = {
   bnb: CHAINS.bsc,
   ethereum: CHAINS.ethereum,
   polygon: CHAINS.polygon,
+  solana: CHAINS.solana,
 };
 
 const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
@@ -23,6 +26,15 @@ const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
   [CHAINS.bsc]: bnb.chains[Env.Testnet],
   [CHAINS.ethereum]: ethereum.chains[Env.Testnet],
   [CHAINS.polygon]: polygon.chains[Env.Testnet],
+  [CHAINS.solana]: solana.chains[Env.Testnet],
+};
+
+const getEmitterAddressSolana = async (address: string): Promise<string> => {
+  const [publicKey] = await PublicKey.findProgramAddress(
+    [Buffer.from("emitter")],
+    new PublicKey(address),
+  );
+  return publicKey.toBuffer().toString("hex");
 };
 
 const getVaa = async (
@@ -30,9 +42,10 @@ const getVaa = async (
   chain: Chain,
   sequence: string,
 ): Promise<void> => {
-  const emitterAddress = getEmitterAddressEth(
-    CHAIN_CONFIGS[chain].wormhole.portal,
-  );
+  const emitterAddress =
+    chain === CHAINS.solana
+      ? await getEmitterAddressSolana(CHAIN_CONFIGS[chain].wormhole.portal)
+      : getEmitterAddressEth(CHAIN_CONFIGS[chain].wormhole.portal);
 
   console.info("Getting VAA...");
   console.table({
@@ -60,7 +73,7 @@ const main = async (): Promise<void> => {
   const chain = CHAINS_BY_NAME[chainName];
   if (!chain || !sequence) {
     console.error(
-      "Usage: npm run get-vaa -- <avalanche|bnb|ethereum|fantom|polygon> <sequence>",
+      "Usage: npm run get-vaa -- <avalanche|bnb|ethereum|fantom|polygon|solana> <sequence>",
     );
     process.exit(1);
   }
