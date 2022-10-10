@@ -7,12 +7,12 @@ import { utils } from "ethers";
 import { useContext } from "react";
 
 import {
-  CHAIN_CONFIGS,
+  EVM_CHAIN_CONFIGS,
   CHAIN_GAS_TOKEN,
   WORMHOLE_ADDRESS_LENGTH,
 } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import type { SwapParameters, TxRecord } from "../types";
+import type { EvmToEvmSwapParameters, TxRecord } from "../types";
 import { bufferToBytesFilter, generateId, handleEvent } from "../utils";
 
 import { useEvmWallet } from "./useEvmWallet";
@@ -36,7 +36,7 @@ export const useEvmToEvmSwap = (
       gasKickStart,
       maxPropellerFee,
       overrides = {},
-    }: SwapParameters) => {
+    }: EvmToEvmSwapParameters) => {
       const { signer, address } = evmWallet.adapter;
       if (!signer || !address)
         throw new Error(`Please connect your EVM wallet`);
@@ -48,9 +48,11 @@ export const useEvmToEvmSwap = (
         throw new Error("Invalid target token");
       }
 
-      await evmWallet.adapter.switchNetwork(CHAIN_CONFIGS[sourceChain].chainId);
+      await evmWallet.adapter.switchNetwork(
+        EVM_CHAIN_CONFIGS[sourceChain].chainId,
+      );
 
-      const sourceChainConfig = CHAIN_CONFIGS[sourceChain];
+      const sourceChainConfig = EVM_CHAIN_CONFIGS[sourceChain];
       const sourceTokenDetails = getTokenDetails(
         sourceChainConfig,
         sourceTokenProjectId,
@@ -92,12 +94,12 @@ export const useEvmToEvmSwap = (
       console.info(`Using memo: ${memo.toString("hex")}`);
 
       const sourceRoutingContract = Routing__factory.connect(
-        CHAIN_CONFIGS[sourceChain].routingContractAddress,
+        EVM_CHAIN_CONFIGS[sourceChain].routingContractAddress,
         signer,
       );
 
       const targetRoutingContract = Routing__factory.connect(
-        CHAIN_CONFIGS[targetChain].routingContractAddress,
+        EVM_CHAIN_CONFIGS[targetChain].routingContractAddress,
         getEvmProvider(targetChain),
       );
 
@@ -153,7 +155,8 @@ export const useEvmToEvmSwap = (
       );
 
       const kickOffReceipt = await kickOffResponse.wait();
-      const sourceBridgeContract = CHAIN_CONFIGS[sourceChain].wormhole.bridge;
+      const sourceBridgeContract =
+        EVM_CHAIN_CONFIGS[sourceChain].wormhole.bridge;
       const sequence = parseSequenceFromLogEth(
         kickOffReceipt,
         sourceBridgeContract,

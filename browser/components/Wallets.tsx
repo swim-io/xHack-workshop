@@ -17,7 +17,7 @@ export const Wallets: FC = () => {
     : () => void evmWallet.adapter.connect();
 
   return (
-    <Card sx={{ width: "100%" }}>
+    <Card sx={{ width: "100%", overflow: "visible" }}>
       <CardContent>
         <Button
           variant="outlined"

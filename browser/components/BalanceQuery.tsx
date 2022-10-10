@@ -20,7 +20,12 @@ export const BalanceQuery = ({
       break;
     }
     case "loading": {
-      content = <CircularProgress size={15} sx={{ ml: 1 }} />;
+      content =
+        query.fetchStatus === "fetching" ? (
+          <CircularProgress size={15} sx={{ ml: 1 }} />
+        ) : (
+          "—"
+        );
       break;
     }
     case "success": {
