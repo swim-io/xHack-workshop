@@ -73,7 +73,7 @@ const main = async (): Promise<void> => {
   const chain = CHAINS_BY_NAME[chainName];
   if (!chain || !sequence) {
     console.error(
-      "Usage: npm run get-vaa -- <avalanche|bnb|ethereum|fantom|polygon|solana> <sequence>",
+      "Usage: npm run get-vaa -- <avalanche|bnb|ethereum|polygon|solana> <sequence>",
     );
     process.exit(1);
   }
