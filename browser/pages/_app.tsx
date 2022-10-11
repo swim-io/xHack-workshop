@@ -18,9 +18,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { AppProps } from "next/app";
 import { useMemo, useState } from "react";
 
-import { SOLANA_RPC_ENDPOINT } from "../config";
 import { EvmWalletProvider } from "../contexts/EvmWalletProvider";
 import { GetEvmConnectionProvider } from "../contexts/GetEvmProvider";
+import { SOLANA_RPC_ENDPOINT } from "../lib/config";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "../components/Wallets.css";

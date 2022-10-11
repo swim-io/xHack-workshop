@@ -13,18 +13,20 @@ import BN from "bn.js";
 import { utils } from "ethers";
 import { useContext } from "react";
 
-import { EVM_CHAIN_CONFIGS, SOLANA_CHAIN_CONFIG } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
+import { EVM_CHAIN_CONFIGS, SOLANA_CHAIN_CONFIG } from "../lib/config";
+import type { SolanaToEvmParameters, TxRecord } from "../lib/types";
 import {
+  bufferToBytesFilter,
   createAddAccounts,
   createApproveAndRevokeIxs,
   createTransferAccounts,
   extractOutputAmountFromAddTx,
+  generateId,
   getOrCreateSolanaTokenAccounts,
+  handleEvent,
   logSolanaAccounts,
-} from "../solanaUtils";
-import type { SolanaToEvmParameters, TxRecord } from "../types";
-import { bufferToBytesFilter, generateId, handleEvent } from "../utils";
+} from "../lib/utils";
 
 import { useEvmWallet } from "./useEvmWallet";
 
@@ -232,7 +234,7 @@ export const useSolanaToEvmSwap = (
         bufferToBytesFilter(memo),
       );
 
-      const finalPromise = new Promise((resolve) => {
+      const promiseToReturn = new Promise((resolve) => {
         evmRoutingContract.once(
           evmFilter,
           handleEvent("target", targetChain, (txRecord) => {
@@ -307,7 +309,7 @@ export const useSolanaToEvmSwap = (
       /**
        * STEP 10: Wait for transaction to appear on target chain
        */
-      await finalPromise;
+      return promiseToReturn;
     },
     {
       mutationKey: SOLANA_TO_EVM_SWAP_MUTATION_KEY,

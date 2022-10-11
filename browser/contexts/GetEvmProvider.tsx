@@ -2,8 +2,8 @@ import { providers } from "ethers";
 import { createContext, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 
-import { EVM_RPC_URLS } from "../config";
-import type { EvmChain } from "../types";
+import { EVM_RPC_URLS } from "../lib/config";
+import type { EvmChain } from "../lib/types";
 
 export const GetEvmProviderContext: React.Context<
   (chain: EvmChain) => providers.JsonRpcProvider

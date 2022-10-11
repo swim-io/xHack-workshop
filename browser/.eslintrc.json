@@ -1,0 +1,8 @@
+{
+  "extends": ["next/core-web-vitals", "@swim-io/eslint-config/react"],
+  "rules": {
+    "import/extensions": "off",
+    "i18next/no-literal-string": "off",
+    "@sayari/no-unwrapped-jsx-text": "off"
+  }
+}

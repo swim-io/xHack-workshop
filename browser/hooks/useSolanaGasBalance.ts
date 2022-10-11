@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { utils } from "ethers";
 
-import { CHAINS, CHAIN_GAS_TOKEN } from "../config";
+import { CHAINS, CHAIN_GAS_TOKEN } from "../lib/config";
 
 export const useSolanaGasBalance = (): UseQueryResult<string | null, Error> => {
   const { connection } = useConnection();

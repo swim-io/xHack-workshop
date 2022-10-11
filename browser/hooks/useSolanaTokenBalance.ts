@@ -6,7 +6,7 @@ import type { TokenProjectId } from "@swim-io/token-projects";
 import { useQuery } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
 
-import { SOLANA_CHAIN_CONFIG } from "../config";
+import { SOLANA_CHAIN_CONFIG } from "../lib/config";
 
 export const useSolanaTokenBalance = (
   tokenProjectId: TokenProjectId,

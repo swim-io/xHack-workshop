@@ -54,10 +54,21 @@ export interface SolanaToEvmParameters extends SwapParameters {
   readonly targetChain: EvmChain;
 }
 
+export interface EvmToSolanaParameters extends SwapParameters {
+  readonly targetChain: SolanaChain;
+  readonly targetTokenProjectId: SupportedSolanaToken;
+  readonly sourceChain: EvmChain;
+}
+
 export const isEvmToEvmSwap = (
   params: SwapParameters,
 ): params is EvmToEvmSwapParameters =>
   isEvmChain(params.sourceChain) && isEvmChain(params.targetChain);
+
+export const isEvmToSolanaSwap = (
+  params: SwapParameters,
+): params is EvmToSolanaParameters =>
+  isEvmChain(params.sourceChain) && isSolanaChain(params.targetChain);
 
 export const isSolanaToEvmSwap = (
   params: SwapParameters,

@@ -63,6 +63,4 @@ export const getChainStableCoins = (
   );
 };
 
-export const EVM_BYTES_LOG_LENGTH = 32;
-export const SWIM_MEMO_LENGTH = 16;
 export const WORMHOLE_ADDRESS_LENGTH = 32;

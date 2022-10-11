@@ -23,11 +23,20 @@ import { useFormik } from "formik";
 import type { FC } from "react";
 import { useState } from "react";
 
-import { CHAINS, CHAIN_ID_TO_NAME, getChainStableCoins } from "../config";
-import { useBalances, useEvmToEvmSwap, useSolanaToEvmSwap } from "../hooks";
-import type { Chain, ChainName, SwapParameters, TxRecord } from "../types";
-import { isEvmToEvmSwap, isSolanaToEvmSwap } from "../types";
-import { getErrorMessage } from "../utils";
+import {
+  useBalances,
+  useEvmToEvmSwap,
+  useEvmtoSolanaSwap,
+  useSolanaToEvmSwap,
+} from "../hooks";
+import { CHAINS, CHAIN_ID_TO_NAME, getChainStableCoins } from "../lib/config";
+import type { Chain, ChainName, SwapParameters, TxRecord } from "../lib/types";
+import {
+  isEvmToEvmSwap,
+  isEvmToSolanaSwap,
+  isSolanaToEvmSwap,
+} from "../lib/types";
+import { getErrorMessage } from "../lib/utils";
 
 import { BalanceQuery } from "./BalanceQuery";
 import { Transactions } from "./Transactions";
