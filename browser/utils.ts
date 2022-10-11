@@ -27,9 +27,9 @@ export const handleEvent =
     callback?.({ txId: event.transactionHash, chain: chainId });
   };
 
-export const getErrorMessage = (error: unknown) => {
+export const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) return error.message;
   if (error !== null && typeof error === "object" && "message" in error)
-    return (error as any).message;
+    return String((error as any).message);
   return String(error);
 };
