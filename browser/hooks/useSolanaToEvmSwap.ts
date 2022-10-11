@@ -8,7 +8,6 @@ import { evmAddressToWormhole } from "@swim-io/evm";
 import { Routing__factory } from "@swim-io/evm-contracts";
 import { parseSequenceFromLogSolana } from "@swim-io/solana";
 import { TOKEN_PROJECTS_BY_ID, TokenProjectId } from "@swim-io/token-projects";
-import { findOrThrow } from "@swim-io/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import BN from "bn.js";
 import { utils } from "ethers";
