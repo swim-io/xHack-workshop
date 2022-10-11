@@ -57,6 +57,9 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
 
   // different swap implementations
   const { mutateAsync: evmToEvmSwap } = useEvmToEvmSwap(onTransactionDetected);
+  const { mutateAsync: evmToSolanaSwap } = useEvmtoSolanaSwap(
+    onTransactionDetected,
+  );
   const { mutateAsync: solanaToEvmSwap } = useSolanaToEvmSwap(
     onTransactionDetected,
   );
@@ -89,16 +92,27 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       setErrorMessage(null);
       setTransactions([]);
 
+      const onSuccess = () => {
+        setIsSuccessAlertOpen(true);
+        void setFieldValue("inputAmount", "");
+      };
+
       try {
         if (isEvmToEvmSwap(formValues)) {
           await evmToEvmSwap(formValues);
-          setIsSuccessAlertOpen(true);
+          onSuccess();
+          return;
+        }
+
+        if (isEvmToSolanaSwap(formValues)) {
+          await evmToSolanaSwap(formValues);
+          onSuccess();
           return;
         }
 
         if (isSolanaToEvmSwap(formValues)) {
           await solanaToEvmSwap(formValues);
-          setIsSuccessAlertOpen(true);
+          onSuccess();
           return;
         }
 
