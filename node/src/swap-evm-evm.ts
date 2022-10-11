@@ -13,8 +13,8 @@ import {
   createEvmKeypair,
   createEvmProvider,
   logEvmEvent,
-} from "./evmUtils";
-import { createMemo } from "./swimUtils";
+} from "./utils/evm";
+import { createMemo } from "./utils/swim";
 
 interface SwapParameters {
   readonly mnemonic: string;

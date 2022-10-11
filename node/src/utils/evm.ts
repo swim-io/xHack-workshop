@@ -1,8 +1,8 @@
 import type { Event } from "ethers";
 import { Wallet, providers, utils } from "ethers";
 
-import type { EvmChain } from "./config";
-import { EVM_RPC_URLS } from "./config";
+import type { EvmChain } from "../config";
+import { EVM_RPC_URLS } from "../config";
 
 const EVM_BYTES_LOG_LENGTH = 32;
 export const bufferToEvmBytesFilter = (buffer: Buffer): Buffer =>

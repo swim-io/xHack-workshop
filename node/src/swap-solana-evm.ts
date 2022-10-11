@@ -23,7 +23,7 @@ import {
   createEvmKeypair,
   createEvmProvider,
   logEvmEvent,
-} from "./evmUtils";
+} from "./utils/evm";
 import {
   createAddAccounts,
   createApproveAndRevokeIxs,
@@ -33,8 +33,8 @@ import {
   extractOutputAmountFromAddTx,
   getOrCreateSolanaTokenAccounts,
   logSolanaAccounts,
-} from "./solanaUtils";
-import { createMemo } from "./swimUtils";
+} from "./utils/solana";
+import { createMemo } from "./utils/swim";
 
 interface SwapParameters {
   readonly evmMnemonic: string;
