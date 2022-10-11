@@ -3,7 +3,6 @@ import type { ChainConfig, GasToken } from "@swim-io/core";
 import { Env } from "@swim-io/core";
 import { avalanche, bnb, ethereum, polygon } from "@swim-io/evm";
 import { solana } from "@swim-io/solana";
-import type { TokenProjectId } from "@swim-io/token-projects";
 import { TOKEN_PROJECTS_BY_ID } from "@swim-io/token-projects";
 import { sortBy } from "lodash";
 
@@ -13,7 +12,7 @@ import type {
   EvmChain,
   StableCoinTokenProject,
 } from "./types";
-import { isStablecoin, isEvmChain } from "./types";
+import { isEvmChain, isStablecoin } from "./types";
 
 export { CHAINS, CHAIN_ID_TO_NAME };
 
@@ -26,6 +25,15 @@ export const SUPPORTED_CHAINS: readonly ChainName[] = [
 ];
 
 const env = Env.Testnet;
+
+export const SOLANA_RPC_ENDPOINT = process.env.NEXT_PUBLIC_SOLANA_RPC;
+
+export const EVM_RPC_URLS: Record<EvmChain, string | undefined> = {
+  [CHAINS.avalanche]: process.env.NEXT_PUBLIC_AVALANCHE_RPC,
+  [CHAINS.bsc]: process.env.NEXT_PUBLIC_BNB_RPC,
+  [CHAINS.ethereum]: process.env.NEXT_PUBLIC_ETHEREUM_RPC,
+  [CHAINS.polygon]: process.env.NEXT_PUBLIC_POLYGON_RPC,
+};
 
 export const EVM_CHAIN_CONFIGS: Record<EvmChain, ChainConfig> = {
   [CHAINS.avalanche]: avalanche.chains[env],

@@ -2,15 +2,8 @@ import { providers } from "ethers";
 import { createContext, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 
-import { CHAINS } from "../config";
+import { EVM_RPC_URLS } from "../config";
 import type { EvmChain } from "../types";
-
-const RPC_URLS: Record<EvmChain, string | undefined> = {
-  [CHAINS.avalanche]: process.env.NEXT_PUBLIC_AVALANCHE_RPC,
-  [CHAINS.bsc]: process.env.NEXT_PUBLIC_BNB_RPC,
-  [CHAINS.ethereum]: process.env.NEXT_PUBLIC_ETHEREUM_RPC,
-  [CHAINS.polygon]: process.env.NEXT_PUBLIC_POLYGON_RPC,
-};
 
 export const GetEvmProviderContext: React.Context<
   (chain: EvmChain) => providers.JsonRpcProvider
@@ -19,7 +12,7 @@ export const GetEvmProviderContext: React.Context<
 });
 
 export const getProvider = (chain: EvmChain): providers.JsonRpcProvider => {
-  const rpcUrl = RPC_URLS[chain];
+  const rpcUrl = EVM_RPC_URLS[chain];
 
   if (!rpcUrl) throw new Error(`No RPC URL was set for chain: ${chain}`);
 
