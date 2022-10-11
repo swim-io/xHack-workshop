@@ -6,14 +6,14 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import { utils } from "ethers";
 import { useContext } from "react";
 
-import { CHAIN_CONFIGS } from "../config";
+import { EVM_CHAIN_CONFIGS } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import type { Chain } from "../types";
+import type { EvmChain } from "../types";
 
 import { useEvmWallet } from "./useEvmWallet";
 
 export const useEvmTokenBalance = (
-  chain: Chain,
+  chain: EvmChain | null,
   tokenProjectId: TokenProjectId,
 ): UseQueryResult<string | null, Error> => {
   const evmWallet = useEvmWallet();
@@ -22,9 +22,9 @@ export const useEvmTokenBalance = (
   return useQuery(
     ["evmTokenBalance", chain, tokenProjectId, evmWallet.address],
     async () => {
-      if (!evmWallet.address) return null;
+      if (!evmWallet.address || chain === null) return null;
 
-      const chainConfig = CHAIN_CONFIGS[chain];
+      const chainConfig = EVM_CHAIN_CONFIGS[chain];
       const tokenDetails = getTokenDetails(chainConfig, tokenProjectId);
 
       if (!tokenDetails.address)
@@ -38,11 +38,8 @@ export const useEvmTokenBalance = (
       );
 
       const atomicBalance = await tokenContract.balanceOf(evmWallet.address);
-      const humanBalance = utils.formatUnits(
-        atomicBalance.toString(),
-        tokenDetails.decimals,
-      );
-      return humanBalance;
+      return utils.formatUnits(atomicBalance.toString(), tokenDetails.decimals);
     },
+    { enabled: chain !== null },
   );
 };

@@ -3,9 +3,9 @@ import { createContext, useRef } from "react";
 import type { ReactElement, ReactNode } from "react";
 
 import { CHAINS } from "../config";
-import type { Chain } from "../types";
+import type { EvmChain } from "../types";
 
-const RPC_URLS: Record<Chain, string | undefined> = {
+const RPC_URLS: Record<EvmChain, string | undefined> = {
   [CHAINS.avalanche]: process.env.NEXT_PUBLIC_AVALANCHE_RPC,
   [CHAINS.bsc]: process.env.NEXT_PUBLIC_BNB_RPC,
   [CHAINS.ethereum]: process.env.NEXT_PUBLIC_ETHEREUM_RPC,
@@ -13,12 +13,12 @@ const RPC_URLS: Record<Chain, string | undefined> = {
 };
 
 export const GetEvmProviderContext: React.Context<
-  (chain: Chain) => providers.JsonRpcProvider
-> = createContext((_: Chain): providers.JsonRpcProvider => {
+  (chain: EvmChain) => providers.JsonRpcProvider
+> = createContext((_: EvmChain): providers.JsonRpcProvider => {
   throw new Error("Not initialized");
 });
 
-export const getProvider = (chain: Chain): providers.JsonRpcProvider => {
+export const getProvider = (chain: EvmChain): providers.JsonRpcProvider => {
   const rpcUrl = RPC_URLS[chain];
 
   if (!rpcUrl) throw new Error(`No RPC URL was set for chain: ${chain}`);
@@ -31,11 +31,11 @@ export const GetEvmConnectionProvider = ({
 }: {
   readonly children?: ReactNode;
 }): ReactElement => {
-  const evmProviders = useRef<ReadonlyMap<Chain, providers.JsonRpcProvider>>(
+  const evmProviders = useRef<ReadonlyMap<EvmChain, providers.JsonRpcProvider>>(
     new Map(),
   );
 
-  const getEvmProvider = (chain: Chain) => {
+  const getEvmProvider = (chain: EvmChain) => {
     const existingEvmProvider = evmProviders.current.get(chain);
     if (existingEvmProvider) {
       return existingEvmProvider;

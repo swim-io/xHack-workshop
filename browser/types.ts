@@ -1,9 +1,21 @@
-import type { CHAINS } from "@certusone/wormhole-sdk";
+import { CHAINS } from "@certusone/wormhole-sdk";
 import type { TokenProject, TokenProjectId } from "@swim-io/token-projects";
 import type { Overrides } from "ethers";
 
-export type ChainName = "avalanche" | "bsc" | "ethereum" | "polygon";
+export type ChainName = "avalanche" | "bsc" | "ethereum" | "polygon" | "solana";
 export type Chain = typeof CHAINS[ChainName];
+export type EvmChain = Exclude<Chain, typeof CHAINS.solana>;
+export type SolanaChain = typeof CHAINS.solana;
+export type SupportedSolanaToken =
+  | TokenProjectId.SwimUsd
+  | TokenProjectId.Usdc
+  | TokenProjectId.Usdt;
+
+export const isEvmChain = (chain: Chain): chain is EvmChain =>
+  chain !== CHAINS.solana;
+
+export const isSolanaChain = (chain: Chain): chain is SolanaChain =>
+  chain === CHAINS.solana;
 
 export interface StableCoinTokenProject extends TokenProject {
   readonly isStablecoin: true;
@@ -30,6 +42,27 @@ export interface SwapParameters {
   readonly maxPropellerFee: string;
   readonly overrides?: Overrides;
 }
+
+export interface EvmToEvmSwapParameters extends SwapParameters {
+  readonly sourceChain: EvmChain;
+  readonly targetChain: EvmChain;
+}
+
+export interface SolanaToEvmParameters extends SwapParameters {
+  readonly sourceChain: SolanaChain;
+  readonly sourceTokenProjectId: SupportedSolanaToken;
+  readonly targetChain: EvmChain;
+}
+
+export const isEvmToEvmSwap = (
+  params: SwapParameters,
+): params is EvmToEvmSwapParameters =>
+  isEvmChain(params.sourceChain) && isEvmChain(params.targetChain);
+
+export const isSolanaToEvmSwap = (
+  params: SwapParameters,
+): params is SolanaToEvmParameters =>
+  isSolanaChain(params.sourceChain) && isEvmChain(params.targetChain);
 
 export interface TxRecord {
   readonly txId: string;

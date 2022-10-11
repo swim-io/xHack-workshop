@@ -23,13 +23,11 @@ import { useFormik } from "formik";
 import type { FC } from "react";
 import { useState } from "react";
 
-import { CHAINS, getChainStableCoins } from "../config";
-import {
-  useEvmGasBalance,
-  useEvmToEvmSwap,
-  useEvmTokenBalance,
-} from "../hooks";
+import { CHAINS, CHAIN_ID_TO_NAME, getChainStableCoins } from "../config";
+import { useBalances, useEvmToEvmSwap, useSolanaToEvmSwap } from "../hooks";
 import type { Chain, ChainName, SwapParameters, TxRecord } from "../types";
+import { isEvmToEvmSwap, isSolanaToEvmSwap } from "../types";
+import { getErrorMessage } from "../utils";
 
 import { BalanceQuery } from "./BalanceQuery";
 import { Transactions } from "./Transactions";
@@ -48,8 +46,11 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       return prev.concat([txRecord]);
     });
 
-  // evm to evm swap implementation
+  // different swap implementations
   const { mutateAsync: evmToEvmSwap } = useEvmToEvmSwap(onTransactionDetected);
+  const { mutateAsync: solanaToEvmSwap } = useSolanaToEvmSwap(
+    onTransactionDetected,
+  );
 
   // state for an alert on successful swaps
   const [isSuccessAlertOpen, setIsSuccessAlertOpen] = useState(false);
@@ -80,25 +81,48 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       setTransactions([]);
 
       try {
-        await evmToEvmSwap(formValues);
-        setIsSuccessAlertOpen(true);
+        if (isEvmToEvmSwap(formValues)) {
+          await evmToEvmSwap(formValues);
+          setIsSuccessAlertOpen(true);
+          return;
+        }
+
+        if (isSolanaToEvmSwap(formValues)) {
+          await solanaToEvmSwap(formValues);
+          setIsSuccessAlertOpen(true);
+          return;
+        }
+
+        throw new Error(
+          `Swap from ${CHAIN_ID_TO_NAME[formValues.sourceChain]} to ${
+            CHAIN_ID_TO_NAME[formValues.targetChain]
+          } is not implemented yet`,
+        );
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : String(error));
+        setErrorMessage(getErrorMessage(error));
       }
     },
   });
 
+  const {
+    sourceChain,
+    sourceTokenProjectId,
+    targetChain,
+    targetTokenProjectId,
+  } = values;
+
   // Get balances for gas token and selected tokens of each chain
-  const sourceGasBalance = useEvmGasBalance(values.sourceChain);
-  const targetGasBalance = useEvmGasBalance(values.targetChain);
-  const sourceTokenBalance = useEvmTokenBalance(
-    values.sourceChain,
-    values.sourceTokenProjectId,
-  );
-  const targetTokenBalance = useEvmTokenBalance(
-    values.targetChain,
-    values.targetTokenProjectId,
-  );
+  const {
+    sourceGasBalance,
+    targetGasBalance,
+    sourceTokenBalance,
+    targetTokenBalance,
+  } = useBalances({
+    sourceChain,
+    targetChain,
+    sourceTokenProjectId,
+    targetTokenProjectId,
+  });
 
   const handleCloseSuccessAlert = () => setIsSuccessAlertOpen(false);
 
@@ -141,7 +165,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 <InputLabel>Source Token</InputLabel>
                 <Select
                   name="sourceTokenProjectId"
-                  value={values.sourceTokenProjectId}
+                  value={sourceTokenProjectId}
                   label="Source Token"
                   onChange={handleChange}
                   disabled={isSubmitting}
@@ -209,7 +233,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                 <InputLabel>Target Token</InputLabel>
                 <Select
                   name="targetTokenProjectId"
-                  value={values.targetTokenProjectId}
+                  value={targetTokenProjectId}
                   label="Target Token"
                   onChange={handleChange}
                   disabled={isSubmitting}
