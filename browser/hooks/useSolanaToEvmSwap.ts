@@ -23,7 +23,7 @@ import {
   createAddAccounts,
   createApproveAndRevokeIxs,
   createTransferAccounts,
-  getOrCreateAssociatedTokenAccount,
+  getOrCreateSolanaTokenAccounts,
   logSolanaAccounts,
 } from "../solanaUtils";
 
@@ -42,7 +42,6 @@ export const useSolanaToEvmSwap = (
 
   return useMutation(
     async ({
-      sourceChain,
       sourceTokenProjectId,
       targetChain,
       targetTokenProjectId,
@@ -50,9 +49,8 @@ export const useSolanaToEvmSwap = (
       gasKickStart,
       maxPropellerFee,
     }: SolanaToEvmParameters) => {
-      const { signer, address: evmAddress } = evmWallet.adapter;
-      if (!signer || !evmAddress)
-        throw new Error("Please connect your EVM wallet");
+      const { address: evmAddress } = evmWallet.adapter;
+      if (!evmAddress) throw new Error("Please connect your EVM wallet");
 
       if (
         !solanaWallet.publicKey ||
@@ -126,35 +124,12 @@ export const useSolanaToEvmSwap = (
       /**
        * STEP 4: Create SPL token accounts if required
        * */
-      const requiredTokenMints = [
-        SOLANA_CHAIN_CONFIG.swimUsdDetails.address,
-        findOrThrow(
-          SOLANA_CHAIN_CONFIG.tokens,
-          (token) => token.projectId === TokenProjectId.Usdc,
-        ).nativeDetails.address,
-        findOrThrow(
-          SOLANA_CHAIN_CONFIG.tokens,
-          (token) => token.projectId === TokenProjectId.Usdt,
-        ).nativeDetails.address,
-      ];
-
-      const splTokenAccounts = await Promise.all(
-        requiredTokenMints.map(async (mint) => {
-          const createdSplTokenAccount =
-            await getOrCreateAssociatedTokenAccount(
-              solanaConnection,
-              sendTransaction,
-              new PublicKey(mint),
-              publicKey,
-            );
-          return createdSplTokenAccount.address;
-        }),
+      const userTokenAccounts = await getOrCreateSolanaTokenAccounts(
+        solanaConnection,
+        sendTransaction,
+        publicKey,
       );
-
-      console.log(
-        "SPL TOKEN ACCOUNTS",
-        splTokenAccounts.map((account) => account.toBase58()),
-      );
+      logSolanaAccounts("User SPL token accounts", userTokenAccounts);
 
       /**
        * STEP 5: Gather arguments for propeller transfer
@@ -168,9 +143,6 @@ export const useSolanaToEvmSwap = (
         maxPropellerFee,
         evmChainConfig.swimUsdDetails.decimals,
       );
-
-      const [swimUsdTokenAccount, usdcTokenAccount, usdtTokenAccount] =
-        splTokenAccounts;
 
       // NOTE: Please always use random bytes to avoid conflicts with other users
       const memo = generateId();
@@ -193,8 +165,11 @@ export const useSolanaToEvmSwap = (
         const addMaxFee = "100000";
         const addAuxiliarySigner = Keypair.generate();
         const addAccounts = createAddAccounts(
-          swimUsdTokenAccount,
-          [usdcTokenAccount, usdtTokenAccount],
+          userTokenAccounts[TokenProjectId.SwimUsd],
+          [
+            userTokenAccounts[TokenProjectId.Usdc],
+            userTokenAccounts[TokenProjectId.Usdt],
+          ],
           addAuxiliarySigner.publicKey,
           new PublicKey(
             getTokenDetails(
@@ -209,9 +184,7 @@ export const useSolanaToEvmSwap = (
         );
         const [approveIx, revokeIx] = await createApproveAndRevokeIxs(
           anchorProvider,
-          sourceTokenProjectId === TokenProjectId.Usdc
-            ? usdcTokenAccount
-            : usdtTokenAccount,
+          userTokenAccounts[sourceTokenProjectId],
           inputAmountAtomic,
           addAuxiliarySigner.publicKey,
           solanaWallet.publicKey,
@@ -277,7 +250,7 @@ export const useSolanaToEvmSwap = (
       const auxiliarySigner = Keypair.generate();
       const transferAccounts = await createTransferAccounts(
         solanaWallet.publicKey,
-        swimUsdTokenAccount,
+        userTokenAccounts[TokenProjectId.SwimUsd],
         auxiliarySigner.publicKey,
       );
       const swimUsdInputAmountAtomic =

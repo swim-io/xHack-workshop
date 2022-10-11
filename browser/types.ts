@@ -6,6 +6,10 @@ export type ChainName = "avalanche" | "bsc" | "ethereum" | "polygon" | "solana";
 export type Chain = typeof CHAINS[ChainName];
 export type EvmChain = Exclude<Chain, typeof CHAINS.solana>;
 export type SolanaChain = typeof CHAINS.solana;
+export type SupportedSolanaToken =
+  | TokenProjectId.SwimUsd
+  | TokenProjectId.Usdc
+  | TokenProjectId.Usdt;
 
 export const isEvmChain = (chain: Chain): chain is EvmChain =>
   chain !== CHAINS.solana;
@@ -46,6 +50,7 @@ export interface EvmToEvmSwapParameters extends SwapParameters {
 
 export interface SolanaToEvmParameters extends SwapParameters {
   readonly sourceChain: SolanaChain;
+  readonly sourceTokenProjectId: SupportedSolanaToken;
   readonly targetChain: EvmChain;
 }
 

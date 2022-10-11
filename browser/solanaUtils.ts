@@ -20,9 +20,12 @@ import {
   TransactionInstruction,
   VersionedTransactionResponse,
 } from "@solana/web3.js";
+import { getTokenDetails } from "@swim-io/core";
+import { TokenProjectId } from "@swim-io/token-projects";
 import BN from "bn.js";
 
 import { SOLANA_CHAIN_CONFIG } from "./config";
+import type { SupportedSolanaToken } from "./types";
 
 export const createAddAccounts = (
   userSwimUsdAtaPublicKey: PublicKey,
@@ -157,6 +160,32 @@ export const createTransferAccounts = async (
     clock: SYSVAR_CLOCK_PUBKEY,
   };
 };
+
+export const getOrCreateSolanaTokenAccounts = async (
+  connection: Connection,
+  sendTransaction: WalletContextState["sendTransaction"],
+  owner: PublicKey,
+): Promise<Record<SupportedSolanaToken, PublicKey>> =>
+  Object.fromEntries(
+    await Promise.all(
+      [TokenProjectId.SwimUsd, TokenProjectId.Usdc, TokenProjectId.Usdt].map(
+        async (tokenProjectId) => {
+          const tokenDetails = getTokenDetails(
+            SOLANA_CHAIN_CONFIG,
+            tokenProjectId,
+          );
+          const createdSplTokenAccount =
+            await getOrCreateAssociatedTokenAccount(
+              connection,
+              sendTransaction,
+              new PublicKey(tokenDetails.address),
+              owner,
+            );
+          return [tokenProjectId, createdSplTokenAccount.address];
+        },
+      ),
+    ),
+  );
 
 export async function getOrCreateAssociatedTokenAccount(
   connection: Connection,

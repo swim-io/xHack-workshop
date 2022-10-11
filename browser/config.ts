@@ -3,6 +3,7 @@ import type { ChainConfig, GasToken } from "@swim-io/core";
 import { Env } from "@swim-io/core";
 import { avalanche, bnb, ethereum, polygon } from "@swim-io/evm";
 import { solana } from "@swim-io/solana";
+import type { TokenProjectId } from "@swim-io/token-projects";
 import { TOKEN_PROJECTS_BY_ID } from "@swim-io/token-projects";
 import { sortBy } from "lodash";
 
