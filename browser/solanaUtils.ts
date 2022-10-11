@@ -187,7 +187,11 @@ export const getOrCreateSolanaTokenAccounts = async (
     ),
   );
 
-export async function getOrCreateAssociatedTokenAccount(
+/**
+ * Adapted from @solana/spl-token getOrCreateAssociatedTokenAccount function
+ * due to missing a compatible Signer type from our wallet adapter
+ */
+async function getOrCreateAssociatedTokenAccount(
   connection: Connection,
   sendTransaction: WalletContextState["sendTransaction"],
   mint: PublicKey,
