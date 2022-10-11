@@ -35,8 +35,8 @@ export const Wallets: FC = () => {
           Solana wallet selector
         </Typography>
         <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}>
-          <WalletMultiButton />
-          <WalletDisconnectButton />
+          <WalletMultiButton disabled={hasSwapInProgress} />
+          <WalletDisconnectButton disabled={hasSwapInProgress} />
         </Box>
       </CardContent>
     </Card>
