@@ -75,6 +75,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
     handleSubmit,
     isSubmitting,
     setFieldValue,
+    setTouched,
     touched,
     values,
   } = useFormik<SwapParameters>({
@@ -92,9 +93,14 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       setErrorMessage(null);
       setTransactions([]);
 
+      const resetInputAmount = () => {
+        void setFieldValue("inputAmount", "");
+        void setTouched({ inputAmount: false });
+      };
+
       const onSuccess = () => {
         setIsSuccessAlertOpen(true);
-        void setFieldValue("inputAmount", "");
+        resetInputAmount();
       };
 
       try {
