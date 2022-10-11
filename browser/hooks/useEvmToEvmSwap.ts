@@ -48,11 +48,11 @@ export const useEvmToEvmSwap = (
         throw new Error("Invalid target token");
       }
 
-      await evmWallet.adapter.switchNetwork(
-        EVM_CHAIN_CONFIGS[sourceChain].chainId,
-      );
-
+      const targetChainConfig = EVM_CHAIN_CONFIGS[targetChain];
       const sourceChainConfig = EVM_CHAIN_CONFIGS[sourceChain];
+
+      await evmWallet.adapter.switchNetwork(sourceChainConfig.chainId);
+
       const sourceTokenDetails = getTokenDetails(
         sourceChainConfig,
         sourceTokenProjectId,
@@ -94,12 +94,12 @@ export const useEvmToEvmSwap = (
       console.info(`Using memo: ${memo.toString("hex")}`);
 
       const sourceRoutingContract = Routing__factory.connect(
-        EVM_CHAIN_CONFIGS[sourceChain].routingContractAddress,
+        sourceChainConfig.routingContractAddress,
         signer,
       );
 
       const targetRoutingContract = Routing__factory.connect(
-        EVM_CHAIN_CONFIGS[targetChain].routingContractAddress,
+        targetChainConfig.routingContractAddress,
         getEvmProvider(targetChain),
       );
 
@@ -155,8 +155,7 @@ export const useEvmToEvmSwap = (
       );
 
       const kickOffReceipt = await kickOffResponse.wait();
-      const sourceBridgeContract =
-        EVM_CHAIN_CONFIGS[sourceChain].wormhole.bridge;
+      const sourceBridgeContract = sourceChainConfig.wormhole.bridge;
       const sequence = parseSequenceFromLogEth(
         kickOffReceipt,
         sourceBridgeContract,
