@@ -85,4 +85,7 @@ const main = async (): Promise<void> => {
   return getVaa(WORMHOLE_RPC, chain, sequence);
 };
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

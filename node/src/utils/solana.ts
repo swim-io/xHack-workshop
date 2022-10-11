@@ -20,8 +20,8 @@ import * as bip39 from "bip39";
 import BN from "bn.js";
 import { derivePath } from "ed25519-hd-key";
 
-import type { SupportedSolanaToken } from "./config";
-import { SOLANA_CHAIN_CONFIG, SOLANA_RPC_URL } from "./config";
+import type { SupportedSolanaToken } from "../config";
+import { SOLANA_CHAIN_CONFIG, SOLANA_RPC_URL } from "../config";
 
 export const logSolanaAccounts = (label: string, accounts: Accounts) => {
   console.table({
