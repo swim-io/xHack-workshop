@@ -27,6 +27,7 @@ import { CHAINS, CHAIN_ID_TO_NAME, getChainStableCoins } from "../config";
 import { useBalances, useEvmToEvmSwap, useSolanaToEvmSwap } from "../hooks";
 import type { Chain, ChainName, SwapParameters, TxRecord } from "../types";
 import { isEvmToEvmSwap, isSolanaToEvmSwap } from "../types";
+import { getErrorMessage } from "../utils";
 
 import { BalanceQuery } from "./BalanceQuery";
 import { Transactions } from "./Transactions";
@@ -98,7 +99,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
           } is not implemented yet`,
         );
       } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : String(error));
+        setErrorMessage(getErrorMessage(error));
       }
     },
   });
