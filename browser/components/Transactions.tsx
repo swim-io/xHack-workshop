@@ -9,8 +9,8 @@ import {
 } from "@mui/material";
 import type { FC } from "react";
 
-import { CHAIN_ID_TO_NAME } from "../config";
-import type { TxRecord } from "../types";
+import { CHAIN_ID_TO_NAME } from "../lib/config";
+import type { TxRecord } from "../lib/types";
 
 interface TransactionsProps {
   readonly transactions: readonly TxRecord[];

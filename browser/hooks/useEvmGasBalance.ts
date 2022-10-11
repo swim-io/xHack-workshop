@@ -4,7 +4,7 @@ import { utils } from "ethers";
 import { useContext } from "react";
 
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import type { EvmChain } from "../types";
+import type { EvmChain } from "../lib/types";
 
 import { useEvmWallet } from "./useEvmWallet";
 

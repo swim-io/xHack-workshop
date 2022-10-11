@@ -6,14 +6,14 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { utils } from "ethers";
 import { useContext } from "react";
 
-import {
-  EVM_CHAIN_CONFIGS,
-  CHAIN_GAS_TOKEN,
-  WORMHOLE_ADDRESS_LENGTH,
-} from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import type { EvmToEvmSwapParameters, TxRecord } from "../types";
-import { bufferToBytesFilter, generateId, handleEvent } from "../utils";
+import {
+  CHAIN_GAS_TOKEN,
+  EVM_CHAIN_CONFIGS,
+  WORMHOLE_ADDRESS_LENGTH,
+} from "../lib/config";
+import type { EvmToEvmSwapParameters, TxRecord } from "../lib/types";
+import { bufferToBytesFilter, generateId, handleEvent } from "../lib/utils";
 
 import { useEvmWallet } from "./useEvmWallet";
 
@@ -116,7 +116,7 @@ export const useEvmToEvmSwap = (
         bufferToBytesFilter(memo),
       );
 
-      const finalPromise = new Promise((resolve) => {
+      const promiseToReturn = new Promise((resolve) => {
         targetRoutingContract.once(
           targetFilter,
           handleEvent("target", targetChain, (txRecord) => {
@@ -162,7 +162,7 @@ export const useEvmToEvmSwap = (
       );
       console.info(`Wormhole sequence: ${sequence}`);
 
-      await finalPromise;
+      return promiseToReturn;
     },
     {
       mutationKey: EVM_TO_EVM_SWAP_MUTATION_KEY,

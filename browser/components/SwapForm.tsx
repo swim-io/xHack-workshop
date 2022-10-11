@@ -23,11 +23,20 @@ import { useFormik } from "formik";
 import type { FC } from "react";
 import { useState } from "react";
 
-import { CHAINS, CHAIN_ID_TO_NAME, getChainStableCoins } from "../config";
-import { useBalances, useEvmToEvmSwap, useSolanaToEvmSwap } from "../hooks";
-import type { Chain, ChainName, SwapParameters, TxRecord } from "../types";
-import { isEvmToEvmSwap, isSolanaToEvmSwap } from "../types";
-import { getErrorMessage } from "../utils";
+import {
+  useBalances,
+  useEvmToEvmSwap,
+  useEvmtoSolanaSwap,
+  useSolanaToEvmSwap,
+} from "../hooks";
+import { CHAINS, CHAIN_ID_TO_NAME, getChainStableCoins } from "../lib/config";
+import type { Chain, ChainName, SwapParameters, TxRecord } from "../lib/types";
+import {
+  isEvmToEvmSwap,
+  isEvmToSolanaSwap,
+  isSolanaToEvmSwap,
+} from "../lib/types";
+import { getErrorMessage } from "../lib/utils";
 
 import { BalanceQuery } from "./BalanceQuery";
 import { Transactions } from "./Transactions";
@@ -48,6 +57,9 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
 
   // different swap implementations
   const { mutateAsync: evmToEvmSwap } = useEvmToEvmSwap(onTransactionDetected);
+  const { mutateAsync: evmToSolanaSwap } = useEvmtoSolanaSwap(
+    onTransactionDetected,
+  );
   const { mutateAsync: solanaToEvmSwap } = useSolanaToEvmSwap(
     onTransactionDetected,
   );
@@ -63,6 +75,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
     handleSubmit,
     isSubmitting,
     setFieldValue,
+    setTouched,
     touched,
     values,
   } = useFormik<SwapParameters>({
@@ -80,16 +93,32 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       setErrorMessage(null);
       setTransactions([]);
 
+      const resetInputAmount = () => {
+        void setFieldValue("inputAmount", "");
+        void setTouched({ inputAmount: false });
+      };
+
+      const onSuccess = () => {
+        setIsSuccessAlertOpen(true);
+        resetInputAmount();
+      };
+
       try {
         if (isEvmToEvmSwap(formValues)) {
           await evmToEvmSwap(formValues);
-          setIsSuccessAlertOpen(true);
+          onSuccess();
+          return;
+        }
+
+        if (isEvmToSolanaSwap(formValues)) {
+          await evmToSolanaSwap(formValues);
+          onSuccess();
           return;
         }
 
         if (isSolanaToEvmSwap(formValues)) {
           await solanaToEvmSwap(formValues);
-          setIsSuccessAlertOpen(true);
+          onSuccess();
           return;
         }
 

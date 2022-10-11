@@ -6,9 +6,9 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import { utils } from "ethers";
 import { useContext } from "react";
 
-import { EVM_CHAIN_CONFIGS } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import type { EvmChain } from "../types";
+import { EVM_CHAIN_CONFIGS } from "../lib/config";
+import type { EvmChain } from "../lib/types";
 
 import { useEvmWallet } from "./useEvmWallet";
 

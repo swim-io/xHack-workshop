@@ -1,7 +1,7 @@
 import type { TokenProjectId } from "@swim-io/token-projects";
 
-import type { Chain } from "../types";
-import { isEvmChain, isSolanaChain } from "../types";
+import type { Chain } from "../lib/types";
+import { isEvmChain, isSolanaChain } from "../lib/types";
 
 import { useEvmGasBalance } from "./useEvmGasBalance";
 import { useEvmTokenBalance } from "./useEvmTokenBalance";

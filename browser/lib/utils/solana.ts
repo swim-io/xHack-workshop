@@ -1,22 +1,20 @@
-import type { Accounts } from "@project-serum/anchor";
-import { AnchorProvider, Spl } from "@project-serum/anchor";
+import type { Accounts, AnchorProvider } from "@project-serum/anchor";
+import { Spl } from "@project-serum/anchor";
+import type { Account } from "@solana/spl-token";
 import {
   TOKEN_PROGRAM_ID,
-  Account,
-  createAssociatedTokenAccountInstruction,
-  getAccount,
-  getAssociatedTokenAddress,
   TokenAccountNotFoundError,
   TokenInvalidAccountOwnerError,
   TokenInvalidMintError,
   TokenInvalidOwnerError,
+  createAssociatedTokenAccountInstruction,
+  getAccount,
+  getAssociatedTokenAddress,
 } from "@solana/spl-token";
 import type { WalletContextState } from "@solana/wallet-adapter-react";
-import {
-  SYSVAR_CLOCK_PUBKEY,
+import { PublicKey, SYSVAR_CLOCK_PUBKEY, Transaction } from "@solana/web3.js";
+import type {
   Connection,
-  PublicKey,
-  Transaction,
   TransactionInstruction,
   VersionedTransactionResponse,
 } from "@solana/web3.js";
@@ -24,8 +22,8 @@ import { getTokenDetails } from "@swim-io/core";
 import { TokenProjectId } from "@swim-io/token-projects";
 import BN from "bn.js";
 
-import { SOLANA_CHAIN_CONFIG } from "./config";
-import type { SupportedSolanaToken } from "./types";
+import { SOLANA_CHAIN_CONFIG } from "../config";
+import type { SupportedSolanaToken } from "../types";
 
 export const createAddAccounts = (
   userSwimUsdAtaPublicKey: PublicKey,
@@ -237,7 +235,7 @@ async function getOrCreateAssociatedTokenAccount(
           lastValidBlockHeight,
           signature,
         });
-      } catch (error: unknown) {
+      } catch {
         // Ignore all errors; for now there is no API-compatible way to selectively ignore the expected
         // instruction error if the associated account exists already.
       }

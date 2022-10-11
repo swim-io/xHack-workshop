@@ -2,29 +2,31 @@ import { AnchorProvider, Program } from "@project-serum/anchor";
 import { createMemoInstruction } from "@solana/spl-memo";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { ComputeBudgetProgram, Keypair, PublicKey } from "@solana/web3.js";
-import { idl } from "@swim-io/solana-contracts";
 import { getTokenDetails } from "@swim-io/core";
 import { evmAddressToWormhole } from "@swim-io/evm";
 import { Routing__factory } from "@swim-io/evm-contracts";
 import { parseSequenceFromLogSolana } from "@swim-io/solana";
+import { idl } from "@swim-io/solana-contracts";
 import { TOKEN_PROJECTS_BY_ID, TokenProjectId } from "@swim-io/token-projects";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import BN from "bn.js";
 import { utils } from "ethers";
 import { useContext } from "react";
 
-import { EVM_CHAIN_CONFIGS, SOLANA_CHAIN_CONFIG } from "../config";
 import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
-import type { SolanaToEvmParameters, TxRecord } from "../types";
-import { bufferToBytesFilter, generateId, handleEvent } from "../utils";
+import { EVM_CHAIN_CONFIGS, SOLANA_CHAIN_CONFIG } from "../lib/config";
+import type { SolanaToEvmParameters, TxRecord } from "../lib/types";
 import {
-  extractOutputAmountFromAddTx,
+  bufferToBytesFilter,
   createAddAccounts,
   createApproveAndRevokeIxs,
   createTransferAccounts,
+  extractOutputAmountFromAddTx,
+  generateId,
   getOrCreateSolanaTokenAccounts,
+  handleEvent,
   logSolanaAccounts,
-} from "../solanaUtils";
+} from "../lib/utils";
 
 import { useEvmWallet } from "./useEvmWallet";
 
@@ -232,7 +234,7 @@ export const useSolanaToEvmSwap = (
         bufferToBytesFilter(memo),
       );
 
-      const finalPromise = new Promise((resolve) => {
+      const promiseToReturn = new Promise((resolve) => {
         evmRoutingContract.once(
           evmFilter,
           handleEvent("target", targetChain, (txRecord) => {
@@ -307,7 +309,7 @@ export const useSolanaToEvmSwap = (
       /**
        * STEP 10: Wait for transaction to appear on target chain
        */
-      await finalPromise;
+      return promiseToReturn;
     },
     {
       mutationKey: SOLANA_TO_EVM_SWAP_MUTATION_KEY,

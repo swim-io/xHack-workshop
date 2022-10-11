@@ -4,7 +4,7 @@ import Head from "next/head";
 
 import { SwapForm } from "../components/SwapForm";
 import { Wallets } from "../components/Wallets";
-import { SUPPORTED_CHAINS } from "../config";
+import { SUPPORTED_CHAINS } from "../lib/config";
 
 const Home: NextPage = () => {
   const chains = SUPPORTED_CHAINS;

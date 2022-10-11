@@ -20,6 +20,7 @@ import { useMemo, useState } from "react";
 
 import { EvmWalletProvider } from "../contexts/EvmWalletProvider";
 import { GetEvmConnectionProvider } from "../contexts/GetEvmProvider";
+import { SOLANA_RPC_ENDPOINT } from "../lib/config";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "../components/Wallets.css";
@@ -27,9 +28,8 @@ import "../components/Wallets.css";
 function MyApp({ Component, pageProps }: AppProps) {
   const [queryClient] = useState(() => new QueryClient());
 
-  const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC;
-
-  if (!endpoint) throw new Error("No solana RPC endpoint found in env");
+  if (!SOLANA_RPC_ENDPOINT)
+    throw new Error("No solana RPC endpoint found in env");
 
   const wallets = useMemo(
     () => [new PhantomWalletAdapter(), new SolletWalletAdapter()],
@@ -41,7 +41,7 @@ function MyApp({ Component, pageProps }: AppProps) {
       <EvmWalletProvider>
         <WalletProvider wallets={wallets} autoConnect>
           <GetEvmConnectionProvider>
-            <ConnectionProvider endpoint={endpoint}>
+            <ConnectionProvider endpoint={SOLANA_RPC_ENDPOINT}>
               <WalletModalProvider>
                 <Component {...pageProps} />
               </WalletModalProvider>

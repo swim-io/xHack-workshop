@@ -1,12 +1,8 @@
 import type { Event } from "ethers";
 
-import { EVM_BYTES_LOG_LENGTH, SWIM_MEMO_LENGTH } from "./config";
-import type { Chain, TxRecord } from "./types";
+import type { Chain, TxRecord } from "../types";
 
-export const generateId = (length = SWIM_MEMO_LENGTH): Buffer => {
-  const idBytes = crypto.getRandomValues(new Uint8Array(length));
-  return Buffer.from(idBytes);
-};
+const EVM_BYTES_LOG_LENGTH = 32;
 
 export const bufferToBytesFilter = (buffer: Buffer): Buffer =>
   Buffer.concat([buffer, Buffer.alloc(EVM_BYTES_LOG_LENGTH - buffer.length)]);
@@ -26,10 +22,3 @@ export const handleEvent =
     });
     callback?.({ txId: event.transactionHash, chain: chainId });
   };
-
-export const getErrorMessage = (error: unknown): string => {
-  if (error instanceof Error) return error.message;
-  if (error !== null && typeof error === "object" && "message" in error)
-    return String((error as any).message);
-  return String(error);
-};

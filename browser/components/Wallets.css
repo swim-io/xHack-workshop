@@ -44,6 +44,10 @@
   border: 1px solid #1976d2;
 }
 
+.wallet-adapter-button[disabled]:hover {
+  background-color: transparent !important;
+}
+
 .wallet-adapter-button[disabled] {
   color: rgba(0, 0, 0, 0.26);
   border: 1px solid rgba(0, 0, 0, 0.12);
