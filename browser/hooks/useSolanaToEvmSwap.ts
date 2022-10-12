@@ -21,10 +21,12 @@ import {
   createAddAccounts,
   createApproveAndRevokeIxs,
   createTransferAccounts,
+  doesTxIncludeMemo,
   extractOutputAmountFromAddTx,
   generateId,
   getOrCreateSolanaTokenAccounts,
   handleEvent,
+  isFinalTx,
   logSolanaAccounts,
 } from "../lib/utils";
 
@@ -43,6 +45,7 @@ export const useSolanaToEvmSwap = (
 
   return useMutation(
     async ({
+      sourceChain,
       sourceTokenProjectId,
       targetChain,
       targetTokenProjectId,
@@ -228,8 +231,31 @@ export const useSolanaToEvmSwap = (
       }
 
       /**
-       * STEP 7: Subscribe to events on target chain
+       * STEP 7: Subscribe to events on source and target chain
        */
+      const subscriptionId = solanaConnection.onLogs(
+        new PublicKey(SOLANA_CHAIN_CONFIG.routingContractAddress),
+        (logs, context) => {
+          if (doesTxIncludeMemo(memo, logs)) {
+            console.table({
+              label: "Propeller tx detected on source chain",
+              memo: memo.toString("hex"),
+              tx: logs.signature,
+              block: context.slot,
+            });
+
+            onTransactionDetected({
+              chain: sourceChain,
+              txId: logs.signature,
+            });
+
+            if (isFinalTx(logs)) {
+              void solanaConnection.removeOnLogsListener(subscriptionId);
+            }
+          }
+        },
+      );
+
       const evmFilter = evmRoutingContract.filters.MemoInteraction(
         bufferToBytesFilter(memo),
       );
