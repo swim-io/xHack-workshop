@@ -16,7 +16,12 @@ import {
   createEvmWallet,
   logEvmEvent,
 } from "./utils/evm";
-import { createSolanaConnection, createSolanaKeypair } from "./utils/solana";
+import {
+  createSolanaConnection,
+  createSolanaKeypair,
+  doesTxIncludeMemo,
+  isFinalTx,
+} from "./utils/solana";
 import { createMemo } from "./utils/swim";
 
 interface SwapParameters {
@@ -175,26 +180,14 @@ const swap = async ({
     const subscriptionId = solanaConnection.onLogs(
       new PublicKey(SOLANA_CHAIN_CONFIG.routingContractAddress),
       (logs, context) => {
-        const didFindMemo = logs.logs.find(
-          (log) => log.indexOf(memo.toString("hex")) !== -1,
-        );
-        if (didFindMemo) {
+        if (doesTxIncludeMemo(memo, logs)) {
           console.table({
             label: "Propeller tx detected on target chain",
             memo: memo.toString("hex"),
             tx: logs.signature,
             block: context.slot,
           });
-          const isFinalTx =
-            logs.logs.some((log) =>
-              new RegExp(
-                `Program ${SOLANA_CHAIN_CONFIG.routingContractAddress}`,
-              ).test(log),
-            ) &&
-            logs.logs.some((log) =>
-              /^Program log: output_amount: \d+$/.test(log),
-            );
-          if (isFinalTx) {
+          if (isFinalTx(logs)) {
             solanaConnection
               .removeOnLogsListener(subscriptionId)
               .then(() => getBalances())

@@ -5,6 +5,7 @@ import {
   getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
 import type {
+  Logs,
   TransactionInstruction,
   VersionedTransactionResponse,
 } from "@solana/web3.js";
@@ -46,6 +47,16 @@ export const extractOutputAmountFromAddTx = (
   );
   return addLog?.match(PROPELLER_OUTPUT_AMOUNT_REGEX)?.groups?.amount ?? null;
 };
+
+export const doesTxIncludeMemo = (memo: Buffer, logs: Logs): boolean =>
+  logs.logs.some((log) => new RegExp(memo.toString("hex")).test(log));
+
+export const isFinalTx = (logs: Logs): boolean =>
+  logs.logs.some((log) =>
+    new RegExp(`^Program ${SOLANA_CHAIN_CONFIG.routingContractAddress}`).test(
+      log,
+    ),
+  ) && logs.logs.some((log) => /^Program log: output_amount: \d+$/.test(log));
 
 export const createSolanaKeypair = async (
   mnemonic: string,
