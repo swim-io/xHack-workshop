@@ -19,8 +19,8 @@ import {
 import {
   createSolanaConnection,
   createSolanaKeypair,
-  getOrCreateSolanaTokenAccounts,
-  logSolanaAccounts,
+  doesTxIncludeMemo,
+  isFinalTx,
 } from "./utils/solana";
 import { createMemo } from "./utils/swim";
 
@@ -102,16 +102,7 @@ const swap = async ({
   );
 
   /**
-   * STEP 4: Create SPL token accounts if required
-   */
-  const userTokenAccounts = await getOrCreateSolanaTokenAccounts(
-    solanaConnection,
-    solanaKeypair,
-  );
-  logSolanaAccounts("User SPL token accounts", userTokenAccounts);
-
-  /**
-   * STEP 5: Fetch and display initial balances
+   * STEP 4: Fetch and display initial balances
    */
   const solanaTokenDetails = getTokenDetails(
     SOLANA_CHAIN_CONFIG,
@@ -147,7 +138,7 @@ const swap = async ({
   });
 
   /**
-   * STEP 6: Approve ERC20 token spend if required
+   * STEP 5: Approve ERC20 token spend if required
    */
   const inputAmountAtomic = utils.parseUnits(
     inputAmount,
@@ -169,7 +160,7 @@ const swap = async ({
   }
 
   /**
-   * STEP 7: Gather arguments for propeller transfer
+   * STEP 6: Gather arguments for propeller transfer
    */
   const solanaOwner = solanaKeypair.publicKey.toBytes();
   const maxPropellerFeeAtomic = utils.parseUnits(
@@ -179,7 +170,7 @@ const swap = async ({
   const memo = createMemo();
 
   /**
-   * STEP 8: Subscribe to events on source and target chains
+   * STEP 7: Subscribe to events on source and target chains
    */
   const evmFilter = evmRoutingContract.filters.MemoInteraction(
     bufferToEvmBytesFilter(memo),
@@ -189,26 +180,14 @@ const swap = async ({
     const subscriptionId = solanaConnection.onLogs(
       new PublicKey(SOLANA_CHAIN_CONFIG.routingContractAddress),
       (logs, context) => {
-        const didFindMemo = logs.logs.find(
-          (log) => log.indexOf(memo.toString("hex")) !== -1,
-        );
-        if (didFindMemo) {
+        if (doesTxIncludeMemo(memo, logs)) {
           console.table({
             label: "Propeller tx detected on target chain",
             memo: memo.toString("hex"),
             tx: logs.signature,
             block: context.slot,
           });
-          const isFinalTx =
-            logs.logs.some((log) =>
-              new RegExp(
-                `Program ${SOLANA_CHAIN_CONFIG.routingContractAddress}`,
-              ).test(log),
-            ) &&
-            logs.logs.some((log) =>
-              /^Program log: output_amount: \d+$/.test(log),
-            );
-          if (isFinalTx) {
+          if (isFinalTx(logs)) {
             solanaConnection
               .removeOnLogsListener(subscriptionId)
               .then(() => getBalances())
@@ -226,7 +205,7 @@ const swap = async ({
   });
 
   /**
-   * STEP 9: Initiate propeller interaction
+   * STEP 8: Initiate propeller interaction
    */
   console.table({
     label: "Initiate propeller tx params",
@@ -257,7 +236,7 @@ const swap = async ({
   );
 
   /**
-   * STEP 10: Display Wormhole sequence number for debugging
+   * STEP 9: Display Wormhole sequence number for debugging
    */
   const initatePropellerTxReceipt = await initiatePropellerTxResponse.wait();
   const sequence = parseSequenceFromLogEth(
@@ -267,7 +246,7 @@ const swap = async ({
   console.info(`Wormhole sequence: ${sequence}`);
 
   /**
-   * STEP 11: Wait for transactions to appear and log final balances
+   * STEP 10: Wait for transactions to appear and log final balances
    */
   return promiseToReturn;
 };
