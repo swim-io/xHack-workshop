@@ -171,7 +171,7 @@ const swap = async ({
   /**
    * STEP 7: Gather arguments for propeller transfer
    */
-  const solanaOwner = solanaTokenAccount.toBytes();
+  const solanaOwner = solanaKeypair.publicKey.toBytes();
   const maxPropellerFeeAtomic = utils.parseUnits(
     maxPropellerFee,
     SOLANA_CHAIN_CONFIG.swimUsdDetails.decimals,
@@ -186,7 +186,7 @@ const swap = async ({
   );
   evmRoutingContract.once(evmFilter, logEvmEvent.bind(null, "source"));
   const promiseToReturn = new Promise<void>((resolve, reject) => {
-    solanaConnection.onLogs(
+    const subscriptionId = solanaConnection.onLogs(
       new PublicKey(SOLANA_CHAIN_CONFIG.routingContractAddress),
       (logs, context) => {
         const didFindMemo = logs.logs.find(
@@ -195,18 +195,31 @@ const swap = async ({
         if (didFindMemo) {
           console.table({
             label: "Propeller tx detected on target chain",
-            memo,
+            memo: memo.toString("hex"),
             tx: logs.signature,
             block: context.slot,
           });
-          getBalances()
-            .then((finalBalances) => {
-              console.table({
-                label: "Final balances",
-                ...finalBalances,
-              });
-            })
-            .then(resolve, reject);
+          const isFinalTx =
+            logs.logs.some((log) =>
+              new RegExp(
+                `Program ${SOLANA_CHAIN_CONFIG.routingContractAddress}`,
+              ).test(log),
+            ) &&
+            logs.logs.some((log) =>
+              /^Program log: output_amount: \d+$/.test(log),
+            );
+          if (isFinalTx) {
+            solanaConnection
+              .removeOnLogsListener(subscriptionId)
+              .then(() => getBalances())
+              .then((finalBalances) => {
+                console.table({
+                  label: "Final balances",
+                  ...finalBalances,
+                });
+              })
+              .then(resolve, reject);
+          }
         }
       },
     );
@@ -279,24 +292,24 @@ const main = async (): Promise<void> => {
     process.exit(1);
   }
 
-  await swap({
-    evmMnemonic: EVM_MNEMONIC,
-    evmHdPath: EVM_HD_PATH,
-    solanaMnemonic: SOLANA_MNEMONIC,
-    solanaHdPath: SOLANA_HD_PATH,
-    sourceChain: CHAINS.bsc,
-    sourceTokenProjectId: TokenProjectId.SwimUsd,
-    targetTokenProjectId: TokenProjectId.Usdc,
-    inputAmount: "1.23",
-    maxPropellerFee: "5.1",
-  });
+  // await swap({
+  //   evmMnemonic: EVM_MNEMONIC,
+  //   evmHdPath: EVM_HD_PATH,
+  //   solanaMnemonic: SOLANA_MNEMONIC,
+  //   solanaHdPath: SOLANA_HD_PATH,
+  //   sourceChain: CHAINS.bsc,
+  //   sourceTokenProjectId: TokenProjectId.SwimUsd,
+  //   targetTokenProjectId: TokenProjectId.Usdc,
+  //   inputAmount: "6.23",
+  //   maxPropellerFee: "5.1",
+  // });
 
   await swap({
     evmMnemonic: EVM_MNEMONIC,
     evmHdPath: EVM_HD_PATH,
     solanaMnemonic: SOLANA_MNEMONIC,
     solanaHdPath: SOLANA_HD_PATH,
-    sourceChain: CHAINS.bsc,
+    sourceChain: CHAINS.avalanche,
     sourceTokenProjectId: TokenProjectId.Usdt,
     targetTokenProjectId: TokenProjectId.Usdc,
     inputAmount: "1.23",
