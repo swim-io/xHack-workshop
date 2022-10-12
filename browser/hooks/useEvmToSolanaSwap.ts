@@ -159,6 +159,11 @@ export const useEvmtoSolanaSwap = (
                 block: context.slot,
               });
 
+              onTransactionDetected({
+                chain: targetChain,
+                txId: logs.signature,
+              });
+
               const isFinalTx =
                 logs.logs.some((log) =>
                   new RegExp(
