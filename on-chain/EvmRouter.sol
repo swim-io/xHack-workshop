@@ -5,7 +5,7 @@ interface IMemoInteractor {
   event MemoInteraction(bytes16 indexed memo);
 }
 
-interface IRouting is IMemoInteractor {
+interface IRouter is IMemoInteractor {
   error WormholeInteractionFailed(bytes lowLevelData);
   error TokenNotRegistered(bytes20 addressOrTokenNumber);
   error SenderIsNotOwner(address sender, address owner);
