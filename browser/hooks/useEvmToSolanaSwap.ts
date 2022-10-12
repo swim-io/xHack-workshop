@@ -1,5 +1,4 @@
 import { parseSequenceFromLogEth } from "@certusone/wormhole-sdk";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { getTokenDetails } from "@swim-io/core";
@@ -7,9 +6,7 @@ import { ERC20Token__factory, Routing__factory } from "@swim-io/evm-contracts";
 import { TOKEN_PROJECTS_BY_ID } from "@swim-io/token-projects";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { utils } from "ethers";
-import { useContext } from "react";
 
-import { GetEvmProviderContext } from "../contexts/GetEvmProvider";
 import { EVM_CHAIN_CONFIGS, SOLANA_CHAIN_CONFIG } from "../lib/config";
 import type { EvmToSolanaParameters, TxRecord } from "../lib/types";
 import {
@@ -31,7 +28,6 @@ export const useEvmtoSolanaSwap = (
   const { connection: solanaConnection } = useConnection();
   const solanaWallet = useWallet();
   const evmWallet = useEvmWallet();
-  const getEvmProvider = useContext(GetEvmProviderContext);
 
   return useMutation(
     async ({
@@ -75,7 +71,6 @@ export const useEvmtoSolanaSwap = (
        */
       await evmWallet.adapter.switchNetwork(evmChainConfig.chainId);
       const { publicKey, sendTransaction } = solanaWallet;
-      const evmProvider = getEvmProvider(sourceChain);
 
       /**
        * STEP 3: Connect to smart contracts
@@ -86,7 +81,7 @@ export const useEvmtoSolanaSwap = (
       );
       const evmTokenContract = ERC20Token__factory.connect(
         evmTokenDetails.address,
-        evmProvider,
+        evmSigner,
       );
       const evmRoutingContract = Routing__factory.connect(
         EVM_CHAIN_CONFIGS[sourceChain].routingContractAddress,
@@ -128,15 +123,7 @@ export const useEvmtoSolanaSwap = (
       /**
        * STEP 6: Gather arguments for propeller transfer
        */
-      const solanaTokenDetails = getTokenDetails(
-        SOLANA_CHAIN_CONFIG,
-        targetTokenProjectId,
-      );
-      const solanaTokenAccount = await getAssociatedTokenAddress(
-        new PublicKey(solanaTokenDetails.address),
-        publicKey,
-      );
-      const solanaOwner = solanaTokenAccount.toBytes();
+      const solanaOwner = publicKey.toBytes();
       const maxPropellerFeeAtomic = utils.parseUnits(
         maxPropellerFee,
         SOLANA_CHAIN_CONFIG.swimUsdDetails.decimals,
@@ -157,8 +144,8 @@ export const useEvmtoSolanaSwap = (
         }),
       );
 
-      const promiseToReturn = new Promise<void>((resolve) => {
-        solanaConnection.onLogs(
+      const promiseToReturn = new Promise<void>((resolve, reject) => {
+        const subscriptionId = solanaConnection.onLogs(
           new PublicKey(SOLANA_CHAIN_CONFIG.routingContractAddress),
           (logs, context) => {
             const didFindMemo = logs.logs.find(
@@ -167,11 +154,25 @@ export const useEvmtoSolanaSwap = (
             if (didFindMemo) {
               console.table({
                 label: "Propeller tx detected on target chain",
-                memo,
+                memo: memo.toString("hex"),
                 tx: logs.signature,
                 block: context.slot,
               });
-              resolve();
+
+              const isFinalTx =
+                logs.logs.some((log) =>
+                  new RegExp(
+                    `Program ${SOLANA_CHAIN_CONFIG.routingContractAddress}`,
+                  ).test(log),
+                ) &&
+                logs.logs.some((log) =>
+                  /^Program log: output_amount: \d+$/.test(log),
+                );
+              if (isFinalTx) {
+                solanaConnection
+                  .removeOnLogsListener(subscriptionId)
+                  .then(resolve, reject);
+              }
             }
           },
         );
