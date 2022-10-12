@@ -11,10 +11,10 @@ import { EVM_CHAIN_CONFIGS, SOLANA_CHAIN_CONFIG } from "../lib/config";
 import type { EvmToSolanaParameters, TxRecord } from "../lib/types";
 import {
   bufferToBytesFilter,
+  doesTxIncludeMemo,
   generateId,
-  getOrCreateSolanaTokenAccounts,
   handleEvent,
-  logSolanaAccounts,
+  isFinalTx,
 } from "../lib/utils";
 
 import { useEvmWallet } from "./useEvmWallet";
@@ -54,17 +54,21 @@ export const useEvmtoSolanaSwap = (
       /**
        * STEP 1: Get EVM chain config and find token projects
        */
-      const solanaTokenProject = TOKEN_PROJECTS_BY_ID[sourceTokenProjectId];
-      if (solanaTokenProject.tokenNumber === null) {
+      const evmTokenProject = TOKEN_PROJECTS_BY_ID[sourceTokenProjectId];
+      if (evmTokenProject.tokenNumber === null) {
         throw new Error("Invalid source token");
       }
 
-      const evmTokenProject = TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
-      if (evmTokenProject.tokenNumber === null) {
+      const solanaTokenProject = TOKEN_PROJECTS_BY_ID[targetTokenProjectId];
+      if (solanaTokenProject.tokenNumber === null) {
         throw new Error("Invalid target token");
       }
 
       const evmChainConfig = EVM_CHAIN_CONFIGS[sourceChain];
+      const evmTokenDetails = getTokenDetails(
+        evmChainConfig,
+        sourceTokenProjectId,
+      );
 
       /**
        * STEP 2: Set up wallets and providers
@@ -75,10 +79,6 @@ export const useEvmtoSolanaSwap = (
       /**
        * STEP 3: Connect to smart contracts
        */
-      const evmTokenDetails = getTokenDetails(
-        evmChainConfig,
-        sourceTokenProjectId,
-      );
       const evmTokenContract = ERC20Token__factory.connect(
         evmTokenDetails.address,
         evmSigner,
@@ -89,17 +89,7 @@ export const useEvmtoSolanaSwap = (
       );
 
       /**
-       * STEP 4: Create SPL token accounts if required
-       * */
-      const userTokenAccounts = await getOrCreateSolanaTokenAccounts(
-        solanaConnection,
-        sendTransaction,
-        publicKey,
-      );
-      logSolanaAccounts("User SPL token accounts", userTokenAccounts);
-
-      /**
-       * STEP 5: Approve ERC20 token spend if required
+       * STEP 4: Approve ERC20 token spend if required
        */
       const inputAmountAtomic = utils.parseUnits(
         inputAmount,
@@ -121,7 +111,7 @@ export const useEvmtoSolanaSwap = (
       }
 
       /**
-       * STEP 6: Gather arguments for propeller transfer
+       * STEP 5: Gather arguments for propeller transfer
        */
       const solanaOwner = publicKey.toBytes();
       const maxPropellerFeeAtomic = utils.parseUnits(
@@ -131,7 +121,7 @@ export const useEvmtoSolanaSwap = (
       const memo = generateId();
 
       /**
-       * STEP 7: Subscribe to events on source and target chains
+       * STEP 6: Subscribe to events on source and target chains
        */
       const evmFilter = evmRoutingContract.filters.MemoInteraction(
         bufferToBytesFilter(memo),
@@ -148,10 +138,7 @@ export const useEvmtoSolanaSwap = (
         const subscriptionId = solanaConnection.onLogs(
           new PublicKey(SOLANA_CHAIN_CONFIG.routingContractAddress),
           (logs, context) => {
-            const didFindMemo = logs.logs.find(
-              (log) => log.indexOf(memo.toString("hex")) !== -1,
-            );
-            if (didFindMemo) {
+            if (doesTxIncludeMemo(memo, logs)) {
               console.table({
                 label: "Propeller tx detected on target chain",
                 memo: memo.toString("hex"),
@@ -164,16 +151,7 @@ export const useEvmtoSolanaSwap = (
                 txId: logs.signature,
               });
 
-              const isFinalTx =
-                logs.logs.some((log) =>
-                  new RegExp(
-                    `Program ${SOLANA_CHAIN_CONFIG.routingContractAddress}`,
-                  ).test(log),
-                ) &&
-                logs.logs.some((log) =>
-                  /^Program log: output_amount: \d+$/.test(log),
-                );
-              if (isFinalTx) {
+              if (isFinalTx(logs)) {
                 solanaConnection
                   .removeOnLogsListener(subscriptionId)
                   .then(resolve, reject);
@@ -184,7 +162,7 @@ export const useEvmtoSolanaSwap = (
       });
 
       /**
-       * STEP 8: Initiate propeller interaction
+       * STEP 7: Initiate propeller interaction
        */
       console.table({
         label: "Initiate propeller tx params",
@@ -215,7 +193,7 @@ export const useEvmtoSolanaSwap = (
       );
 
       /**
-       * STEP 9: Display Wormhole sequence number for debugging
+       * STEP 8: Display Wormhole sequence number for debugging
        */
       const initatePropellerTxReceipt =
         await initiatePropellerTxResponse.wait();
@@ -226,7 +204,7 @@ export const useEvmtoSolanaSwap = (
       console.info(`Wormhole sequence: ${sequence}`);
 
       /**
-       * STEP 10: Wait for transaction to appear on target chain
+       * STEP 9: Wait for transaction to appear on target chain
        */
       return promiseToReturn;
     },
