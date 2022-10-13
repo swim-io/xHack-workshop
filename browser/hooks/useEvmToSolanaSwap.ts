@@ -74,7 +74,7 @@ export const useEvmtoSolanaSwap = (
        * STEP 2: Set up wallets and providers
        */
       await evmWallet.adapter.switchNetwork(evmChainConfig.chainId);
-      const { publicKey, sendTransaction } = solanaWallet;
+      const { publicKey } = solanaWallet;
 
       /**
        * STEP 3: Connect to smart contracts
