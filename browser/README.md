@@ -2,7 +2,7 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 
 ## Getting Started
 
-First, create an `.env.local` file with your environment variables for PRC providers. See [.env.local.example](./.env.local.example) for the configuration options. You can also copy the example, it should work fine.
+First, create an `.env.local` file with your environment variables for RPC providers. See [.env.local.example](./.env.local.example) for the configuration options. You can also copy the example, it should work fine.
 
 ```bash
 cp .env.local.example .env.local
@@ -15,6 +15,8 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You will need some swappable tokens in at least one wallet in order to get started. You can use the EVM testnet faucet as described [here](../README.md) or speak to a member of the Swim team.
 
 ## Deployment
 
