@@ -43,6 +43,7 @@ export const useSolanaToEvmSwap = (
 
   return useMutation(
     async ({
+      sourceChain,
       sourceTokenProjectId,
       targetChain,
       targetTokenProjectId,
@@ -285,6 +286,11 @@ export const useSolanaToEvmSwap = (
       console.info(
         `Source chain propeller transfer transaction hash: ${propellerTransferTxId}`,
       );
+
+      onTransactionDetected({
+        chain: sourceChain,
+        txId: propellerTransferTxId,
+      });
 
       /**
        * STEP 9: Display Wormhole sequence number for debugging

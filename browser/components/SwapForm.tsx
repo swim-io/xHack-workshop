@@ -86,7 +86,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
       targetTokenProjectId: getChainStableCoins(CHAINS[chains[1]])[0].id,
       inputAmount: "",
       gasKickStart: false,
-      maxPropellerFee: "1",
+      maxPropellerFee: "0",
     },
     validate: validateForm,
     onSubmit: async (formValues) => {
@@ -298,6 +298,7 @@ export const SwapForm: FC<SwapFormProps> = ({ chains }) => {
                   onChange={handleChange}
                   disabled={isSubmitting}
                   size="small"
+                  helperText="This must be less than the amount to be transferred"
                 />
               </FormControl>
 

@@ -15,6 +15,7 @@ import type { WalletContextState } from "@solana/wallet-adapter-react";
 import { PublicKey, SYSVAR_CLOCK_PUBKEY, Transaction } from "@solana/web3.js";
 import type {
   Connection,
+  Logs,
   TransactionInstruction,
   VersionedTransactionResponse,
 } from "@solana/web3.js";
@@ -252,3 +253,13 @@ async function getOrCreateAssociatedTokenAccount(
 
   return account;
 }
+
+export const doesTxIncludeMemo = (memo: Buffer, logs: Logs): boolean =>
+  logs.logs.some((log) => new RegExp(memo.toString("hex")).test(log));
+
+export const isFinalTx = (logs: Logs): boolean =>
+  logs.logs.some((log) =>
+    new RegExp(`^Program ${SOLANA_CHAIN_CONFIG.routingContractAddress}`).test(
+      log,
+    ),
+  ) && logs.logs.some((log) => /^Program log: output_amount: \d+$/.test(log));
