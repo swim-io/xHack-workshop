@@ -26,7 +26,6 @@ import {
   generateId,
   getOrCreateSolanaTokenAccounts,
   handleEvent,
-  isFinalTx,
   logSolanaAccounts,
 } from "../lib/utils";
 
@@ -249,9 +248,7 @@ export const useSolanaToEvmSwap = (
               txId: logs.signature,
             });
 
-            if (isFinalTx(logs)) {
-              void solanaConnection.removeOnLogsListener(subscriptionId);
-            }
+            void solanaConnection.removeOnLogsListener(subscriptionId);
           }
         },
       );
